@@ -15,6 +15,7 @@ module.exports = {
     const isOwner = interaction.guild.ownerId === interaction.user.id;
     const aktif = interaction.client.reklamKorumaAktif;
 
+    // Sistem zaten aktifse: uyarı + KAPAT butonu
     if (aktif) {
       const embed = new EmbedBuilder()
         .setTitle("ℹ️ Sistem Zaten Aktif")
@@ -25,9 +26,40 @@ module.exports = {
         new ButtonBuilder().setCustomId("kapat").setLabel("🛑 KAPAT").setStyle(ButtonStyle.Danger)
       );
 
-      return interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
+      await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
+
+      const collector = interaction.channel.createMessageComponentCollector({
+        time: 20000,
+        filter: i => i.user.id === interaction.user.id
+      });
+
+      collector.on("collect", async i => {
+        if (!isOwner) {
+          return i.reply({
+            embeds: [
+              new EmbedBuilder()
+                .setTitle("🚫 Yetki Yok")
+                .setDescription("Bu işlemi sadece sunucu sahibi gerçekleştirebilir.")
+                .setColor(0xff0000)
+            ],
+            ephemeral: true
+          });
+        }
+
+        if (i.customId === "kapat") {
+          interaction.client.reklamKorumaAktif = false;
+
+          await i.update({
+            embeds: [new EmbedBuilder().setTitle("🛑 Sistem Kapatıldı").setColor(0xff0000)],
+            components: []
+          });
+        }
+      });
+
+      return;
     }
 
+    // Sistem pasifse: AÇ / AÇMA butonları
     if (!isOwner) {
       return interaction.reply({
         embeds: [
