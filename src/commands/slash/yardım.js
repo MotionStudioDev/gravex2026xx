@@ -13,19 +13,18 @@ module.exports = {
     .setDescription("Grave yardım komutları listelenir."),
 
   async execute(interaction) {
-    // Yardım menüsüne elle eklenen komutlar ve kategoriler
     const helpMenu = {
       "Genel": [
         { name: "yardım", desc: "Yardım menüsünü gösterir" },
-        { name: "bilgi",  desc: "Bot hakkında bilgi verir" }
+        { name: "bilgi", desc: "Bot hakkında bilgi verir" }
       ],
       "Moderasyon": [
-        { name: "ban", emoji: "🔨", desc: "Kullanıcıyı yasaklar" },
-        { name: "kick", emoji: "👢", desc: "Kullanıcıyı sunucudan atar" }
+        { name: "ban", desc: "Kullanıcıyı yasaklar" },
+        { name: "kick", desc: "Kullanıcıyı sunucudan atar" }
       ],
       "Eğlence": [
-        { name: "şaka", emoji: "😂", desc: "Rastgele şaka yapar" },
-        { name: "zar", emoji: "🎲", desc: "Zar atar" }
+        { name: "şaka", desc: "Rastgele şaka yapar" },
+        { name: "zar", desc: "Zar atar" }
       ]
     };
 
@@ -44,7 +43,7 @@ module.exports = {
 
       helpMenu[category].forEach(cmd => {
         embed.addFields({
-          name: `${cmd.emoji} /${cmd.name}`,
+          name: `/${cmd.name}`,
           value: cmd.desc,
           inline: false
         });
