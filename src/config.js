@@ -1,4 +1,4 @@
 module.exports = {
   prefix: "g!",
-  owner: "305360816251600898"
+  owner: "702901632136118273"
 }
