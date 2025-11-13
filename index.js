@@ -104,3 +104,41 @@ app.listen(process.env.PORT || 3000);
 
 // Botu başlat
 client.login(token);
+
+////////reklam 
+const { reklamKorumaAktif } = require("./commands/slash/reklam-engel");
+
+client.on("messageCreate", async message => {
+  if (!reklamKorumaAktif) return;
+  if (message.author.bot || !message.guild) return;
+  if (message.member.permissions.has("ManageMessages")) return;
+
+  const reklamKelimeleri = ["discord.gg", "http://", "https://", ".com", ".net", ".org", ".xyz", ".tk"];
+  const içerik = message.content.toLowerCase();
+  const kullanıcıAdı = message.author.username.toLowerCase();
+
+  const reklamVar = reklamKelimeleri.some(kelime =>
+    içerik.includes(kelime) || kullanıcıAdı.includes(kelime)
+  );
+
+  if (reklamVar) {
+    await message.delete().catch(() => {});
+
+    const kanal = message.guild.channels.cache.find(c => c.name === "reklam-log");
+    if (kanal) {
+      const embed = {
+        title: "🚫 Reklam Engellendi",
+        description: `**${message.author.tag}** tarafından gönderilen reklam içeriği silindi.`,
+        color: 0xff0000,
+        fields: [
+          { name: "Kanal", value: `${message.channel}`, inline: true },
+          { name: "İçerik", value: `\`\`\`${message.content.slice(0, 100)}\`\`\``, inline: false }
+        ]
+      };
+
+      const logMesaj = await kanal.send({ embeds: [embed] });
+      setTimeout(() => logMesaj.delete().catch(() => {}), 2000);
+    }
+  }
+});
+///// reklam son
