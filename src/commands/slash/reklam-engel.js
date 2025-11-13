@@ -15,20 +15,19 @@ module.exports = {
     const isOwner = interaction.guild.ownerId === interaction.user.id;
     const aktif = interaction.client.reklamKorumaAktif;
 
-    // Eğer sistem zaten aktifse uyarı ver
     if (aktif) {
-      return interaction.reply({
-        embeds: [
-          new EmbedBuilder()
-            .setTitle("ℹ️ Sistem Zaten Aktif")
-            .setDescription("Bu sunucuda reklam engelleme sistemi zaten aktif durumda.")
-            .setColor(0x00bfff)
-        ],
-        ephemeral: true
-      });
+      const embed = new EmbedBuilder()
+        .setTitle("ℹ️ Sistem Zaten Aktif")
+        .setDescription("Bu sunucuda reklam engelleme sistemi zaten aktif durumda.\n\nSistemi kapatmak istiyorsan **KAPAT** butonuna bas.")
+        .setColor(0x00bfff);
+
+      const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId("kapat").setLabel("🛑 KAPAT").setStyle(ButtonStyle.Danger)
+      );
+
+      return interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
     }
 
-    // Sadece kurucu açabilir
     if (!isOwner) {
       return interaction.reply({
         embeds: [
