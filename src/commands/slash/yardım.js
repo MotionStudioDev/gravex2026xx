@@ -20,6 +20,7 @@ module.exports = {
       ],
       "Moderasyon": [
         { name: "ban", desc: "Kullanıcıyı yasaklar" },
+        { name: "reklam-engel", desc: "Reklam engelleme sistemi" },
         { name: "kick", desc: "Kullanıcıyı sunucudan atar" }
       ],
       "Eğlence": [
