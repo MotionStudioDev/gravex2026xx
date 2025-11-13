@@ -7,16 +7,43 @@ const {
 } = require("discord.js");
 
 module.exports = {
-  reklamKorumaAktif: false,
-
   data: new SlashCommandBuilder()
     .setName("reklam-engel")
     .setDescription("Reklam engelleme sistemini aç/kapat"),
 
   async execute(interaction) {
+    const isOwner = interaction.guild.ownerId === interaction.user.id;
+    const aktif = interaction.client.reklamKorumaAktif;
+
+    // Eğer sistem zaten aktifse uyarı ver
+    if (aktif) {
+      return interaction.reply({
+        embeds: [
+          new EmbedBuilder()
+            .setTitle("ℹ️ Sistem Zaten Aktif")
+            .setDescription("Bu sunucuda reklam engelleme sistemi zaten aktif durumda.")
+            .setColor(0x00bfff)
+        ],
+        ephemeral: true
+      });
+    }
+
+    // Sadece kurucu açabilir
+    if (!isOwner) {
+      return interaction.reply({
+        embeds: [
+          new EmbedBuilder()
+            .setTitle("🚫 Yetki Yok")
+            .setDescription("Bu işlemi sadece sunucu sahibi gerçekleştirebilir.")
+            .setColor(0xff0000)
+        ],
+        ephemeral: true
+      });
+    }
+
     const embed = new EmbedBuilder()
       .setTitle("⚠️ Reklam Engelleme Sistemi")
-      .setDescription("Reklam engelleme sistemini aktif etmek üzeresin.\n\n**AÇ** → sistemi başlatır\n**AÇMA** → iptal eder")
+      .setDescription("Sistemi aktif etmek üzeresin.\n\n**AÇ** → sistemi başlatır\n**AÇMA** → iptal eder")
       .setColor(0xffcc00);
 
     const row = new ActionRowBuilder().addComponents(
@@ -32,22 +59,8 @@ module.exports = {
     });
 
     collector.on("collect", async i => {
-      const isOwner = i.guild.ownerId === i.user.id;
-
       if (i.customId === "ac") {
-        if (!isOwner) {
-          return i.reply({
-            embeds: [
-              new EmbedBuilder()
-                .setTitle("🚫 Yetki Yok")
-                .setDescription("Bu işlemi sadece sunucu sahibi gerçekleştirebilir.")
-                .setColor(0xff0000)
-            ],
-            ephemeral: true
-          });
-        }
-
-        module.exports.reklamKorumaAktif = true;
+        interaction.client.reklamKorumaAktif = true;
 
         const aktifEmbed = new EmbedBuilder()
           .setTitle("✅ Sistem Aktif")
@@ -69,19 +82,7 @@ module.exports = {
       }
 
       if (i.customId === "kapat") {
-        if (!isOwner) {
-          return i.reply({
-            embeds: [
-              new EmbedBuilder()
-                .setTitle("🚫 Yetki Yok")
-                .setDescription("Bu işlemi sadece sunucu sahibi gerçekleştirebilir.")
-                .setColor(0xff0000)
-            ],
-            ephemeral: true
-          });
-        }
-
-        module.exports.reklamKorumaAktif = false;
+        interaction.client.reklamKorumaAktif = false;
 
         await i.update({
           embeds: [new EmbedBuilder().setTitle("🛑 Sistem Kapatıldı").setColor(0xff0000)],
