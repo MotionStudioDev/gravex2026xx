@@ -14,7 +14,7 @@ module.exports = {
 
 
     const embed = new EmbedBuilder()
-      .setTitle("EgoBOT | Davet Bağlantısı")
+      .setTitle("GraveBOT | Davet Bağlantısı")
       .setDescription(`[Botu davet etmek için tıkla](https://discord.com/api/oauth2/authorize?client_id=${client.user.id}&permissions=0&scope=bot%20applications.commands)`)
       .setColor("#0099ff")
       .setTimestamp()
