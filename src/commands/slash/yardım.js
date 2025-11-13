@@ -15,7 +15,7 @@ module.exports = {
   async execute(interaction) {
     const allCommands = [...interaction.client.slashcommands.values()];
 
-    // Kategorilere ayır
+    // Komutları kategorilere ayır
     const categorized = {};
     allCommands.forEach(cmd => {
       const category = cmd.category || "Genel";
@@ -26,6 +26,7 @@ module.exports = {
     const categories = Object.keys(categorized);
     let currentCategory = categories[0];
 
+    // Embed oluştur
     const getEmbed = (category) => {
       const embed = new EmbedBuilder()
         .setTitle(`📘 Yardım Menüsü — ${category}`)
@@ -48,6 +49,7 @@ module.exports = {
       return embed;
     };
 
+    // Butonları oluştur
     const getButtons = () => {
       const row = new ActionRowBuilder();
       categories.forEach(cat => {
@@ -61,12 +63,14 @@ module.exports = {
       return row;
     };
 
+    // İlk mesaj
     const message = await interaction.reply({
       embeds: [getEmbed(currentCategory)],
       components: [getButtons()],
       ephemeral: true
     });
 
+    // Buton dinleyici
     const collector = message.createMessageComponentCollector({ time: 60000 });
 
     collector.on("collect", async i => {
