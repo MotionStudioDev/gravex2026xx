@@ -93,4 +93,4 @@ app.get("/", (req, res) => {
 
 
 
-client.login(config.token)
+client.login(process.env.TOKEN)
