@@ -123,20 +123,25 @@ client.on("messageCreate", async message => {
 
   if (reklamVar) {
     await message.delete().catch(() => {});
+
     const kanal = message.guild.channels.cache.find(c => c.name === "reklam-log");
-    if (kanal) {
-      const logMesaj = await kanal.send({
-        embeds: [{
-          title: "🚫 Reklam Engellendi",
-          description: `**${message.author.tag}** tarafından gönderilen reklam içeriği silindi.`,
-          color: 0xff0000,
-          fields: [
-            { name: "Kanal", value: `${message.channel}`, inline: true },
-            { name: "İçerik", value: `\`\`\`${message.content.slice(0, 100)}\`\`\``, inline: false }
-          ]
-        }]
-      });
+    if (!kanal) return; // log kanalı yoksa sessizce geç
+
+    try {
+      const embed = {
+        title: "🚫 Reklam Engellendi",
+        description: `**${message.author.tag}** tarafından gönderilen reklam içeriği silindi.`,
+        color: 0xff0000,
+        fields: [
+          { name: "Kanal", value: `${message.channel}`, inline: true },
+          { name: "İçerik", value: `\`\`\`${message.content.slice(0, 100)}\`\`\``, inline: false }
+        ]
+      };
+
+      const logMesaj = await kanal.send({ embeds: [embed] });
       setTimeout(() => logMesaj.delete().catch(() => {}), 2000);
+    } catch (err) {
+      console.log("Reklam log mesajı gönderilemedi:", err);
     }
   }
 });
