@@ -10,14 +10,14 @@ const moment = require("moment");
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("yardım")
-    .setDescription("Elle tanımlanmış yardım menüsünü gösterir"),
+    .setDescription("Grave yardım komutları listelenir."),
 
   async execute(interaction) {
     // Yardım menüsüne elle eklenen komutlar ve kategoriler
     const helpMenu = {
       "Genel": [
-        { name: "yardım", emoji: "📘", desc: "Yardım menüsünü gösterir" },
-        { name: "bilgi", emoji: "ℹ️", desc: "Bot hakkında bilgi verir" }
+        { name: "yardım", desc: "Yardım menüsünü gösterir" },
+        { name: "bilgi",  desc: "Bot hakkında bilgi verir" }
       ],
       "Moderasyon": [
         { name: "ban", emoji: "🔨", desc: "Kullanıcıyı yasaklar" },
@@ -34,7 +34,7 @@ module.exports = {
 
     const getEmbed = (category) => {
       const embed = new EmbedBuilder()
-        .setTitle(`📂 Yardım Menüsü — ${category}`)
+        .setTitle(`📂 Grave Yardım Menüsü — ${category}`)
         .setColor(0x00bfff)
         .setThumbnail(interaction.client.user.displayAvatarURL())
         .setFooter({
