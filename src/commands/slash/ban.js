@@ -20,13 +20,29 @@ module.exports = {
       option.setName("sebep")
         .setDescription("Ban sebebi (isteğe bağlı)")
         .setRequired(false)
-    )
-    .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
+    ),
 
   async execute(interaction) {
     const target = interaction.options.getUser("üye");
     const reason = interaction.options.getString("sebep") || "Belirtilmedi";
     const member = interaction.guild.members.cache.get(target.id);
+    const executor = interaction.member;
+
+    // 🔒 Yetki kontrolü: ban yetkisi veya sunucu sahibi mi?
+    const isOwner = interaction.guild.ownerId === executor.id;
+    const hasBanPermission = executor.permissions.has(PermissionFlagsBits.BanMembers);
+
+    if (!isOwner && !hasBanPermission) {
+      return interaction.reply({
+        embeds: [
+          new EmbedBuilder()
+            .setTitle("🚫 Yetki Yok")
+            .setDescription("Bu komutu sadece sunucu sahibi veya ban yetkisi olanlar kullanabilir.")
+            .setColor(0xff0000)
+        ],
+        ephemeral: true
+      });
+    }
 
     if (!member) {
       return interaction.reply({
