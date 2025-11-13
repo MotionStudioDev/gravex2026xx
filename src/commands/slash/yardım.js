@@ -10,26 +10,31 @@ const moment = require("moment");
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("yardım")
-    .setDescription("Komutları kategoriye göre gösterir"),
+    .setDescription("Elle tanımlanmış yardım menüsünü gösterir"),
 
   async execute(interaction) {
-    const allCommands = [...interaction.client.slashcommands.values()];
+    // Yardım menüsüne elle eklenen komutlar ve kategoriler
+    const helpMenu = {
+      "Genel": [
+        { name: "yardım", emoji: "📘", desc: "Yardım menüsünü gösterir" },
+        { name: "bilgi", emoji: "ℹ️", desc: "Bot hakkında bilgi verir" }
+      ],
+      "Moderasyon": [
+        { name: "ban", emoji: "🔨", desc: "Kullanıcıyı yasaklar" },
+        { name: "kick", emoji: "👢", desc: "Kullanıcıyı sunucudan atar" }
+      ],
+      "Eğlence": [
+        { name: "şaka", emoji: "😂", desc: "Rastgele şaka yapar" },
+        { name: "zar", emoji: "🎲", desc: "Zar atar" }
+      ]
+    };
 
-    // Komutları kategorilere ayır
-    const categorized = {};
-    allCommands.forEach(cmd => {
-      const category = cmd.category || "Genel";
-      if (!categorized[category]) categorized[category] = [];
-      categorized[category].push(cmd);
-    });
-
-    const categories = Object.keys(categorized);
+    const categories = Object.keys(helpMenu);
     let currentCategory = categories[0];
 
-    // Embed oluştur
     const getEmbed = (category) => {
       const embed = new EmbedBuilder()
-        .setTitle(`📘 Yardım Menüsü — ${category}`)
+        .setTitle(`📂 Yardım Menüsü — ${category}`)
         .setColor(0x00bfff)
         .setThumbnail(interaction.client.user.displayAvatarURL())
         .setFooter({
@@ -37,11 +42,10 @@ module.exports = {
           iconURL: interaction.user.displayAvatarURL()
         });
 
-      categorized[category].forEach(cmd => {
-        const emoji = cmd.emoji || "🔹";
+      helpMenu[category].forEach(cmd => {
         embed.addFields({
-          name: `${emoji} /${cmd.data.name}`,
-          value: cmd.data.description || "Açıklama yok",
+          name: `${cmd.emoji} /${cmd.name}`,
+          value: cmd.desc,
           inline: false
         });
       });
@@ -49,7 +53,6 @@ module.exports = {
       return embed;
     };
 
-    // Butonları oluştur
     const getButtons = () => {
       const row = new ActionRowBuilder();
       categories.forEach(cat => {
@@ -63,14 +66,12 @@ module.exports = {
       return row;
     };
 
-    // İlk mesaj
     const message = await interaction.reply({
       embeds: [getEmbed(currentCategory)],
       components: [getButtons()],
       ephemeral: true
     });
 
-    // Buton dinleyici
     const collector = message.createMessageComponentCollector({ time: 60000 });
 
     collector.on("collect", async i => {
