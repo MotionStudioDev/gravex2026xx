@@ -106,102 +106,90 @@ app.listen(process.env.PORT || 3000);
 client.login(token);
 
 ////////reklam 
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionsBitField } = require("discord.js");
+const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionsBitField } = require("discord.js");
 
-// Reklam kelimeleri (daha akıllı filtre)
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent
+  ]
+});
+
+// === SİSTEM BAŞLANGIÇ ===
+client.once("ready", () => {
+  client.reklamKorumaAktif = false;
+  client.reklamLogKanal = new Map();
+  console.log(`${client.user.tag} hazır! Reklam sistemi yüklendi.`);
+});
+
+// === REKLAM ENGELLEME ===
 const REKLAM_KELIMELERI = [
   "discord.gg", "discord.com/invite", "discordapp.com/invite",
-  "http://", "https://",
-  ".com", ".net", ".org", ".xyz", ".tk", ".gg", ".me", ".io"
+  "http://", "https://", ".com", ".net", ".org", ".xyz", ".tk", ".gg"
 ];
 
 client.on("messageCreate", async (message) => {
-  // 1. Temel kontroller
   if (!client.reklamKorumaAktif) return;
   if (message.author.bot || !message.guild || !message.member) return;
   if (message.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) return;
 
-  // 2. İçerik, kullanıcı adı ve embed'leri topla
   const içerik = message.content.toLowerCase();
   const kullanıcıAdı = message.author.displayName.toLowerCase();
 
   const embedMetinleri = message.embeds
-    .flatMap(embed => [
-      embed.title,
-      embed.description,
-      embed.footer?.text,
-      ...(embed.fields?.map(f => f.value) || [])
-    ])
+    .flatMap(e => [e.title, e.description, ...(e.fields?.map(f => f.value) || [])])
     .filter(Boolean)
-    .map(str => str.toLowerCase());
+    .map(s => s.toLowerCase());
 
-  // 3. Reklam kontrolü
-  const reklamVar = REKLAM_KELIMELERI.some(kelime =>
-    içerik.includes(kelime) ||
-    kullanıcıAdı.includes(kelime) ||
-    embedMetinleri.some(metin => metin.includes(kelime))
+  const reklamVar = REKLAM_KELIMELERI.some(k => 
+    içerik.includes(k) || kullanıcıAdı.includes(k) || embedMetinleri.some(m => m.includes(k))
   );
 
   if (!reklamVar) return;
 
-  // 4. Mesajı sil
-  try {
-    await message.delete();
-  } catch (err) {
-    console.error(`[REKLAM] Mesaj silinemedi: ${message.id}`, err);
-    return;
-  }
+  try { await message.delete(); } catch { return; }
 
-  // 5. Uyarı mesajı (3 sn sonra silinir)
-  let uyarıMesajı;
+  let uyarı;
   try {
-    uyarıMesajı = await message.channel.send({
-      embeds: [
-        new EmbedBuilder()
-          .setTitle("Reklam Engellendi")
-          .setDescription(`**${message.author.tag}** tarafından gönderilen reklam silindi.`)
-          .setColor(0xff0000)
-          .setTimestamp()
+    uyarı = await message.channel.send({
+      embeds: [new EmbedBuilder()
+        .setTitle("Reklam Engellendi")
+        .setDescription(`**${message.author.tag}** reklam yaptı, mesaj silindi.`)
+        .setColor(0xff0000)
       ]
     });
-    setTimeout(() => uyarıMesajı?.delete().catch(() => {}), 3000);
-  } catch (err) {
-    console.error(`[REKLAM] Uyarı gönderilemedi: ${message.channel.id}`, err);
-  }
+    setTimeout(() => uyarı?.delete().catch(() => {}), 3000);
+  } catch {}
 
-  // 6. Log kanalı
-  const logKanalID = client.reklamLogKanal?.get(message.guild.id);
-  if (!logKanalID) return;
+  const logID = client.reklamLogKanal.get(message.guild.id);
+  if (!logID) return;
 
-  const logKanal = message.guild.channels.cache.get(logKanalID);
+  const logKanal = message.guild.channels.cache.get(logID);
   if (!logKanal) return;
 
   try {
-    const logEmbed = new EmbedBuilder()
-      .setTitle("Reklam Yakalandı!")
-      .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
-      .addFields(
-        { name: "Üye", value: `${message.author} (\`${message.author.id}\`)`, inline: true },
-        { name: "Kanal", value: `${message.channel}`, inline: true },
-        { name: "Tarih", value: `<t:${Math.floor(Date.now() / 1000)}:F>`, inline: false },
-        { name: "İçerik", value: message.content?.slice(0, 1000) || "*Embed/attachment*", inline: false }
-      )
-      .setColor(0xff9900)
-      .setFooter({ text: `Mesaj ID: ${message.id}` });
-
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setLabel("Mesaja Git")
-        .setStyle(ButtonStyle.Link)
-        .setURL(`https://discord.com/channels/${message.guild.id}/${message.channel.id}/${message.id}`)
-    );
-
     await logKanal.send({
-      embeds: [logEmbed],
-      components: [row]
+      embeds: [new EmbedBuilder()
+        .setTitle("Reklam Yakalandı!")
+        .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
+        .addFields(
+          { name: "Üye", value: `${message.author} (\`${message.author.id}\`)`, inline: true },
+          { name: "Kanal", value: `${message.channel}`, inline: true },
+          { name: "Tarih", value: `<t:${Math.floor(Date.now() / 1000)}:F>`, inline: false },
+          { name: "İçerik", value: message.content?.slice(0, 1000) || "*Embed*", inline: false }
+        )
+        .setColor(0xff9900)
+        .setFooter({ text: `Mesaj ID: ${message.id}` })
+      ],
+      components: [new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setLabel("Mesaja Git")
+          .setStyle(ButtonStyle.Link)
+          .setURL(`https://discord.com/channels/${message.guild.id}/${message.channel.id}/${message.id}`)
+      )]
     });
-  } catch (err) {
-    console.error(`[REKLAM] Log gönderilemedi: ${logKanalID}`, err);
-  }
+  } catch {}
 });
+
 ///// reklam son
