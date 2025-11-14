@@ -21,6 +21,8 @@ module.exports = {
       "Moderasyon": [
         { name: "ban", desc: "Kullanıcıyı yasaklar" },
         { name: "reklam-engel", desc: "Reklam engelleme sistemi" },
+        { name: "kufur-engel", desc: "Kufur engelleme sistemi" },
+        { name: "sil", desc: "100 adet mesaj siler" },
         { name: "kick", desc: "Kullanıcıyı sunucudan atar" }
       ],
       "Eğlence": [
