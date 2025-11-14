@@ -8,11 +8,7 @@ const {
   StringSelectMenuBuilder
 } = require("discord.js");
 
-const logKanalHaritasi = new Map(); // sunucuID → kanalID
-
 module.exports = {
-  logKanalHaritasi,
-
   data: new SlashCommandBuilder()
     .setName("reklam-engel")
     .setDescription("Reklam engelleme sistemini aç/kapat"),
@@ -21,10 +17,17 @@ module.exports = {
     const isOwner = interaction.guild.ownerId === interaction.user.id;
     const aktif = interaction.client.reklamKorumaAktif;
 
+    if (!isOwner) {
+      return interaction.reply({
+        embeds: [new EmbedBuilder().setTitle("🚫 Yetki Yok").setDescription("Bu komutu sadece sunucu sahibi kullanabilir.").setColor(0xff0000)],
+        ephemeral: true
+      });
+    }
+
     if (aktif) {
       const embed = new EmbedBuilder()
         .setTitle("ℹ️ Sistem Zaten Aktif")
-        .setDescription("Bu sunucuda reklam engelleme sistemi zaten aktif durumda.\n\nSistemi kapatmak istiyorsan **KAPAT** butonuna bas.")
+        .setDescription("Reklam engelleme sistemi zaten aktif.\n\nKapatmak için aşağıdaki butona bas.")
         .setColor(0x00bfff);
 
       const row = new ActionRowBuilder().addComponents(
@@ -39,16 +42,9 @@ module.exports = {
       });
 
       collector.on("collect", async i => {
-        if (!isOwner) {
-          return i.reply({
-            embeds: [new EmbedBuilder().setTitle("🚫 Yetki Yok").setDescription("Bu işlemi sadece sunucu sahibi yapabilir.").setColor(0xff0000)],
-            ephemeral: true
-          });
-        }
-
         if (i.customId === "kapat") {
           interaction.client.reklamKorumaAktif = false;
-          logKanalHaritasi.delete(interaction.guild.id);
+          interaction.client.reklamLogKanal.delete(interaction.guild.id);
 
           await i.update({
             embeds: [new EmbedBuilder().setTitle("🛑 Sistem Kapatıldı").setColor(0xff0000)],
@@ -58,13 +54,6 @@ module.exports = {
       });
 
       return;
-    }
-
-    if (!isOwner) {
-      return interaction.reply({
-        embeds: [new EmbedBuilder().setTitle("🚫 Yetki Yok").setDescription("Bu işlemi sadece sunucu sahibi yapabilir.").setColor(0xff0000)],
-        ephemeral: true
-      });
     }
 
     const embed = new EmbedBuilder()
@@ -112,16 +101,6 @@ module.exports = {
           components: []
         });
       }
-
-      if (i.customId === "kapat") {
-        interaction.client.reklamKorumaAktif = false;
-        logKanalHaritasi.delete(interaction.guild.id);
-
-        await i.update({
-          embeds: [new EmbedBuilder().setTitle("🛑 Sistem Kapatıldı").setColor(0xff0000)],
-          components: []
-        });
-      }
     });
 
     const menuCollector = interaction.channel.createMessageComponentCollector({
@@ -131,7 +110,7 @@ module.exports = {
 
     menuCollector.on("collect", async i => {
       const kanalID = i.values[0];
-      logKanalHaritasi.set(interaction.guild.id, kanalID);
+      interaction.client.reklamLogKanal.set(interaction.guild.id, kanalID);
 
       await i.update({
         embeds: [new EmbedBuilder().setTitle("📌 Log Kanalı Ayarlandı").setDescription(`<#${kanalID}> kanalına log gönderilecek.`).setColor(0x00bfff)],
