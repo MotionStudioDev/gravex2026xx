@@ -106,7 +106,8 @@ app.listen(process.env.PORT || 3000);
 client.login(token);
 
 ////////reklam 
-client.reklamKorumaAktif = false;
+const { logKanalHaritasi } = require("./commands/slash/reklam-engel");
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 
 client.on("messageCreate", async message => {
   if (!client.reklamKorumaAktif) return;
@@ -124,24 +125,39 @@ client.on("messageCreate", async message => {
   if (reklamVar) {
     await message.delete().catch(() => {});
 
-    const kanal = message.guild.channels.cache.find(c => c.name === "reklam-log");
-    if (!kanal) return; // log kanalı yoksa sessizce geç
+    // Uyarı mesajı → reklam yapılan kanala
+    const uyarı = await message.channel.send({
+      embeds: [
+        new EmbedBuilder()
+          .setTitle("🚫 Reklam Engellendi")
+          .setDescription(`**${message.author.tag}** tarafından gönderilen reklam içeriği silindi.`)
+          .setColor(0xff0000)
+      ]
+    }).catch(() => {});
+    setTimeout(() => uyarı?.delete().catch(() => {}), 2000);
 
-    try {
-      const embed = {
-        title: "🚫 Reklam Engellendi",
-        description: `**${message.author.tag}** tarafından gönderilen reklam içeriği silindi.`,
-        color: 0xff0000,
-        fields: [
+    // Log kanalı varsa → embed + buton
+    const logKanalID = logKanalHaritasi.get(message.guild.id);
+    const logKanal = message.guild.channels.cache.get(logKanalID);
+    if (logKanal) {
+      const logEmbed = new EmbedBuilder()
+        .setTitle("🚨 Üye reklam yaparken yakalandı!")
+        .addFields(
+          { name: "Üye", value: `${message.author.tag} (${message.author.id})`, inline: true },
           { name: "Kanal", value: `${message.channel}`, inline: true },
-          { name: "İçerik", value: `\`\`\`${message.content.slice(0, 100)}\`\`\``, inline: false }
-        ]
-      };
+          { name: "Tarih", value: `<t:${Math.floor(Date.now() / 1000)}:f>`, inline: false }
+        )
+        .setColor(0xff9900);
 
-      const logMesaj = await kanal.send({ embeds: [embed] });
-      setTimeout(() => logMesaj.delete().catch(() => {}), 2000);
-    } catch (err) {
-      console.log("Reklam log mesajı gönderilemedi:", err);
+      const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setLabel("🔗 Mesaja Git")
+          .setStyle(ButtonStyle.Link)
+          .setURL(`https://discord.com/channels/${message.guild.id}/${message.channel.id}`)
+      );
+
+      const logMesaj = await logKanal.send({ embeds: [logEmbed], components: [row] }).catch(() => {});
+      setTimeout(() => logMesaj?.delete().catch(() => {}), 2000);
     }
   }
 });
