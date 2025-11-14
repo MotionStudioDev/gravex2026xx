@@ -207,53 +207,5 @@ client.on("messageCreate", async (message) => {
 });
 ///// reklam son
 //////// küfür engel
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
-const db = require("quick.db");
 
-client.on("messageCreate", async message => {
-  if (!db.get(`kufurEngel_${message.guild?.id}`)) return;
-  if (message.author.bot || !message.guild) return;
-  if (!message.member || message.member.permissions.has("ManageMessages")) return;
-
-  const kufurKelimeleri = ["amk", "aq", "oç", "piç", "siktir", "orospu", "yarrak", "göt", "ananı", "sikerim"];
-  const içerik = message.content.toLowerCase();
-  const kullanıcıAdı = message.author.username.toLowerCase();
-
-  const kufurVar = kufurKelimeleri.some(k => içerik.includes(k) || kullanıcıAdı.includes(k));
-  if (!kufurVar) return;
-
-  await message.delete().catch(() => {});
-
-  const uyarı = await message.channel.send({
-    embeds: [
-      new EmbedBuilder()
-        .setTitle("🚫 Küfür Engellendi")
-        .setDescription(`**${message.author.tag}** tarafından gönderilen küfürlü mesaj silindi.`)
-        .setColor(0xff0000)
-    ]
-  }).catch(() => {});
-  setTimeout(() => uyarı?.delete().catch(() => {}), 2000);
-
-  const logKanalID = db.get(`kufurLog_${message.guild.id}`);
-  const logKanal = message.guild.channels.cache.get(logKanalID);
-  if (logKanal) {
-    const logEmbed = new EmbedBuilder()
-      .setTitle("🚨 Üye küfür ederken yakalandı!")
-      .addFields(
-        { name: "Üye", value: `${message.author.tag} (${message.author.id})`, inline: true },
-        { name: "Kanal", value: `${message.channel}`, inline: true },
-        { name: "Tarih", value: `<t:${Math.floor(Date.now() / 1000)}:f>`, inline: false }
-      )
-      .setColor(0xff9900);
-
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setLabel("🔗 Mesaja Git")
-        .setStyle(ButtonStyle.Link)
-        .setURL(`https://discord.com/channels/${message.guild.id}/${message.channel.id}`)
-    );
-
-    await logKanal.send({ embeds: [logEmbed], components: [row] }).catch(() => {});
-  }
-});
 ///// küüfür son
