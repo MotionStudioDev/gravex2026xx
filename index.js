@@ -206,3 +206,97 @@ client.on("messageCreate", async (message) => {
   }
 });
 ///// reklam son
+//////// küfür engel
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionsBitField } = require("discord.js");
+const db = require("quick.db");
+
+// Küfür kelimeleri (daha akıllı, yanlış pozitif azaltıldı)
+const KUFUR_KELIMELERI = [
+  "amk", "aq", "ananı sik", "ananı siktir", "orospu", "oç", "piç", "siktir git",
+  "yarrak", "göt", "sik", "sikerim", "ananı", "babanı", "sikiyim", "mk", "amına"
+];
+
+client.on("messageCreate", async (message) => {
+  // 1. Sistem kapalıysa veya bot/guild yok → çık
+  if (!db.get(`kufurEngel_${message.guild?.id}`)) return;
+  if (message.author.bot || !message.guild || !message.member) return;
+  if (message.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) return;
+
+  // 2. İçerik + kullanıcı adı + embed kontrolü
+  const içerik = message.content.toLowerCase().replace(/[^a-zçğıöşü0-9]/g, " "); // nokta, boşluk, emoji temizle
+  const kullanıcıAdı = message.author.displayName.toLowerCase();
+
+  const embedMetinleri = message.embeds
+    .flatMap(e => [e.title, e.description, ...(e.fields?.map(f => f.value) || [])])
+    .filter(Boolean)
+    .map(s => s.toLowerCase().replace(/[^a-zçğıöşü0-9]/g, " "));
+
+  // 3. Küfür var mı?
+  const kufurVar = KUFUR_KELIMELERI.some(kelime => {
+    const regex = new RegExp(`\\b${kelime.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+    return regex.test(içerik) || regex.test(kullanıcıAdı) || embedMetinleri.some(m => regex.test(m));
+  });
+
+  if (!kufurVar) return;
+
+  // 4. Mesajı sil
+  try {
+    await message.delete();
+  } catch (err) {
+    console.error(`[KÜFÜR] Mesaj silinemedi: ${message.id}`, err);
+    return;
+  }
+
+  // 5. Uyarı mesajı (3 sn sonra silinir)
+  let uyarı;
+  try {
+    uyarı = await message.channel.send({
+      embeds: [
+        new EmbedBuilder()
+          .setTitle("Küfür Engellendi")
+          .setDescription(`**${message.author.tag}** küfür etti, mesaj silindi.`)
+          .setColor(0xff0000)
+          .setTimestamp()
+      ]
+    });
+    setTimeout(() => uyarı?.delete().catch(() => {}), 3000);
+  } catch (err) {
+    console.error(`[KÜFÜR] Uyarı gönderilemedi: ${message.channel.id}`, err);
+  }
+
+  // 6. Log kanalı
+  const logKanalID = db.get(`kufurLog_${message.guild.id}`);
+  if (!logKanalID) return;
+
+  const logKanal = message.guild.channels.cache.get(logKanalID);
+  if (!logKanal) return;
+
+  try {
+    const logEmbed = new EmbedBuilder()
+      .setTitle("Küfür Yakalandı!")
+      .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
+      .addFields(
+        { name: "Üye", value: `${message.author} (\`${message.author.id}\`)`, inline: true },
+        { name: "Kanal", value: `${message.channel}`, inline: true },
+        { name: "Tarih", value: `<t:${Math.floor(Date.now() / 1000)}:F>`, inline: false },
+        { name: "İçerik", value: message.content?.slice(0, 1000) || "*Embed/attachment*", inline: false }
+      )
+      .setColor(0xff9900)
+      .setFooter({ text: `Mesaj ID: ${message.id}` });
+
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setLabel("Mesaja Git")
+        .setStyle(ButtonStyle.Link)
+        .setURL(`https://discord.com/channels/${message.guild.id}/${message.channel.id}/${message.id}`)
+    );
+
+    await logKanal.send({
+      embeds: [logEmbed],
+      components: [row]
+    });
+  } catch (err) {
+    console.error(`[KÜFÜR] Log gönderilemedi: ${logKanalID}`, err);
+  }
+});
+///// küüfür son
