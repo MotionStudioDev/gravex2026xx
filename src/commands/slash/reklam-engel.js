@@ -7,7 +7,7 @@ const {
   ChannelType,
   StringSelectMenuBuilder
 } = require("discord.js");
-
+//
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("reklam-engel")
