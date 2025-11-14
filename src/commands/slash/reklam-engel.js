@@ -14,8 +14,9 @@ module.exports = {
     .setDescription("Reklam engelleme sistemini aç/kapat"),
 
   async execute(interaction) {
+    const client = interaction.client;
+    const guildId = interaction.guild.id;
     const isOwner = interaction.guild.ownerId === interaction.user.id;
-    const aktif = interaction.client.reklamKorumaAktif;
 
     if (!isOwner) {
       return interaction.reply({
@@ -24,7 +25,7 @@ module.exports = {
       });
     }
 
-    if (aktif) {
+    if (client.reklamKorumaAktif) {
       const embed = new EmbedBuilder()
         .setTitle("ℹ️ Sistem Zaten Aktif")
         .setDescription("Reklam engelleme sistemi zaten aktif.\n\nKapatmak için aşağıdaki butona bas.")
@@ -34,17 +35,17 @@ module.exports = {
         new ButtonBuilder().setCustomId("kapat").setLabel("🛑 KAPAT").setStyle(ButtonStyle.Danger)
       );
 
-      await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
+      const reply = await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
 
-      const collector = interaction.channel.createMessageComponentCollector({
+      const collector = reply.createMessageComponentCollector({
         time: 20000,
         filter: i => i.user.id === interaction.user.id
       });
 
       collector.on("collect", async i => {
         if (i.customId === "kapat") {
-          interaction.client.reklamKorumaAktif = false;
-          interaction.client.reklamLogKanal.delete(interaction.guild.id);
+          client.reklamKorumaAktif = false;
+          client.reklamLogKanal?.delete(guildId);
 
           await i.update({
             embeds: [new EmbedBuilder().setTitle("🛑 Sistem Kapatıldı").setColor(0xff0000)],
@@ -66,16 +67,16 @@ module.exports = {
       new ButtonBuilder().setCustomId("acma").setLabel("❌ AÇMA").setStyle(ButtonStyle.Secondary)
     );
 
-    await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
+    const reply = await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
 
-    const collector = interaction.channel.createMessageComponentCollector({
+    const collector = reply.createMessageComponentCollector({
       time: 20000,
       filter: i => i.user.id === interaction.user.id
     });
 
     collector.on("collect", async i => {
       if (i.customId === "ac") {
-        interaction.client.reklamKorumaAktif = true;
+        client.reklamKorumaAktif = true;
 
         const kanalSecenekleri = interaction.guild.channels.cache
           .filter(c => c.type === ChannelType.GuildText)
@@ -89,9 +90,25 @@ module.exports = {
 
         const row = new ActionRowBuilder().addComponents(select);
 
-        await i.update({
+        const update = await i.update({
           embeds: [new EmbedBuilder().setTitle("✅ Sistem Aktif").setDescription("İsteğe bağlı olarak log kanalını seçebilirsin.").setColor(0x00bfff)],
           components: [row]
+        });
+
+        const menuCollector = update.createMessageComponentCollector({
+          time: 30000,
+          filter: i => i.user.id === interaction.user.id
+        });
+
+        menuCollector.on("collect", async i => {
+          const kanalID = i.values[0];
+          if (!client.reklamLogKanal) client.reklamLogKanal = new Map();
+          client.reklamLogKanal.set(guildId, kanalID);
+
+          await i.update({
+            embeds: [new EmbedBuilder().setTitle("📌 Log Kanalı Ayarlandı").setDescription(`<#${kanalID}> kanalına log gönderilecek.`).setColor(0x00bfff)],
+            components: []
+          });
         });
       }
 
@@ -101,21 +118,6 @@ module.exports = {
           components: []
         });
       }
-    });
-
-    const menuCollector = interaction.channel.createMessageComponentCollector({
-      time: 30000,
-      filter: i => i.customId === "logsec" && i.user.id === interaction.user.id
-    });
-
-    menuCollector.on("collect", async i => {
-      const kanalID = i.values[0];
-      interaction.client.reklamLogKanal.set(interaction.guild.id, kanalID);
-
-      await i.update({
-        embeds: [new EmbedBuilder().setTitle("📌 Log Kanalı Ayarlandı").setDescription(`<#${kanalID}> kanalına log gönderilecek.`).setColor(0x00bfff)],
-        components: []
-      });
     });
   }
 };
