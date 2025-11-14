@@ -125,6 +125,7 @@ client.on("messageCreate", async message => {
 
   await message.delete().catch(() => {});
 
+  // 🔔 Uyarı mesajı → reklam yapılan kanala (2 saniyede silinir)
   const uyarı = await message.channel.send({
     embeds: [
       new EmbedBuilder()
@@ -135,6 +136,7 @@ client.on("messageCreate", async message => {
   }).catch(() => {});
   setTimeout(() => uyarı?.delete().catch(() => {}), 2000);
 
+  // 📌 Log mesajı → kalıcı
   const logKanalID = client.reklamLogKanal.get(message.guild.id);
   const logKanal = message.guild.channels.cache.get(logKanalID);
   if (logKanal) {
@@ -154,8 +156,8 @@ client.on("messageCreate", async message => {
         .setURL(`https://discord.com/channels/${message.guild.id}/${message.channel.id}`)
     );
 
-    const logMesaj = await logKanal.send({ embeds: [logEmbed], components: [row] }).catch(() => {});
-    setTimeout(() => logMesaj?.delete().catch(() => {}), 2000);
+    await logKanal.send({ embeds: [logEmbed], components: [row] }).catch(() => {});
+    // ❌ Artık log mesajı silinmiyor
   }
 });
 ///// reklam son
