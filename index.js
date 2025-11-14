@@ -107,7 +107,6 @@ client.login(token);
 
 ////////reklam 
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
-const { logKanalHaritasi } = require("./commands/slash/reklam-engel");
 
 client.on("messageCreate", async message => {
   if (!client.reklamKorumaAktif) return;
@@ -126,7 +125,6 @@ client.on("messageCreate", async message => {
 
   await message.delete().catch(() => {});
 
-  // 🔔 Uyarı mesajı → reklam yapılan kanala
   const uyarı = await message.channel.send({
     embeds: [
       new EmbedBuilder()
@@ -137,8 +135,7 @@ client.on("messageCreate", async message => {
   }).catch(() => {});
   setTimeout(() => uyarı?.delete().catch(() => {}), 2000);
 
-  // 📌 Log kanalı varsa → embed + buton
-  const logKanalID = logKanalHaritasi.get(message.guild.id);
+  const logKanalID = client.reklamLogKanal.get(message.guild.id);
   const logKanal = message.guild.channels.cache.get(logKanalID);
   if (logKanal) {
     const logEmbed = new EmbedBuilder()
