@@ -4,7 +4,6 @@ const moment = require("moment");
 const { REST } = require("@discordjs/rest");
 const { Routes } = require("discord-api-types/v10");
 const config = require("./src/config.js");
-const db = require("quick.db");
 const token = process.env.TOKEN;
 
 const client = new Client({
@@ -107,7 +106,6 @@ client.login(token);
 
 ////////reklam 
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionsBitField } = require("discord.js");
-const db = require("quick.db");
 
 // Reklam kelimeleri (daha akıllı filtre)
 const REKLAM_KELIMELERI = [
