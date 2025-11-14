@@ -11,7 +11,7 @@ module.exports = {
         .setStyle(ButtonStyle.Link)
         .setURL(`https://discord.com/api/oauth2/authorize?client_id=${client.user.id}&permissions=0&scope=bot%20applications.commands`))
 
-
+///
 
     const embed = new EmbedBuilder()
       .setTitle("GraveBOT | Davet Bağlantısı")
