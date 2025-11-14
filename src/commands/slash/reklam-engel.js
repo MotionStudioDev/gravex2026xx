@@ -7,6 +7,7 @@ const {
   ChannelType,
   StringSelectMenuBuilder
 } = require("discord.js");
+const db = require("quick.db");
 //
 module.exports = {
   data: new SlashCommandBuilder()
