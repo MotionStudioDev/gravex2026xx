@@ -205,169 +205,66 @@ client.on("messageCreate", async (message) => {
 });
 ///// reklam son
 //////// küfür engel
+// --- KÜFÜR ENGEL EVENT --- //
 client.on("messageCreate", async message => {
-  if (!client.kufurEngelAktif) return;
-  if (message.author.bot || !message.guild) return;
-  if (!message.member || message.member.permissions.has("ManageMessages")) return;
+    if (!message.guild || message.author.bot) return;
 
-  const kufurKelimeleri = [
-    "amk", "aq", "oç", "piç", "siktir", "sikerim", "sikeyim", "yarrak", "göt", "ananı", "ananı avradını",
-    "orospu", "orospu çocuğu", "pezevenk", "kahpe", "mal", "salak", "aptal", "gerizekalı", "embesil",
-    "ibne", "ibine", "dallama", "çük", "çükünü", "sikik", "sikimsonik", "sikik herif", "gavat", "kaltak",
-    "sürtük", "şerefsiz", "şerefsizlik", "şırfıntı", "top", "travesti", "seks", "sex", "fuck", "fucker",
-    "motherfucker", "bitch", "bastard", "dick", "pussy", "slut"
-  ];
+    const guildId = message.guild.id;
 
-  const içerik = message.content.toLowerCase();
-  const kullanıcıAdı = message.author.username.toLowerCase();
+    // Sistem açık değilse çalışmasın
+    if (
+        !client.kufurEngelAktif ||
+        !client.kufurEngelAktif.get(guildId)
+    ) return;
 
-  const kufur = kufurKelimeleri.find(k => içerik.includes(k) || kullanıcıAdı.includes(k));
-  if (!kufur) return;
+    // Küfür listesi
+    const kufurler = [
+        "amk", "aq", "aQ", "siktir", "orospu", "piç",
+        "sik", "yarrak", "amına", "amcık", "göt",
+        "mal", "salak", "gerizekalı"
+    ];
 
-  await message.delete().catch(() => {});
+    const içerik = message.content.toLowerCase();
 
-  const uyarı = await message.channel.send({
-    embeds: [
-      new EmbedBuilder()
-        .setTitle("🚫 Küfür Engellendi")
-        .setDescription(`**${message.author.tag}** tarafından gönderilen küfürlü mesaj silindi.`)
-        .setColor(0xff0000)
-    ]
-  }).catch(() => {});
-  setTimeout(() => uyarı?.delete().catch(() => {}), 2000);
+    // Küfür kontrolü
+    if (kufurler.some(k => içerik.includes(k))) {
 
-  const logKanalID = client.kufurLogKanal.get(message.guild.id);
-  const logKanal = message.guild.channels.cache.get(logKanalID);
-  if (logKanal) {
-    const logEmbed = new EmbedBuilder()
-      .setTitle("🚨 Üye küfür ederken yakalandı!")
-      .addFields(
-        { name: "Üye", value: `${message.author.tag} (${message.author.id})`, inline: true },
-        { name: "Kanal", value: `${message.channel}`, inline: true },
-        { name: "Tarih", value: `<t:${Math.floor(Date.now() / 1000)}:f>`, inline: false },
-        { name: "Küfürlü Mesaj", value: `\`${message.content}\``, inline: false }
-      )
-      .setColor(0xff9900);
+        // Mesajı sil
+        try { await message.delete(); } catch (e) {}
 
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setLabel("🔗 Mesaja Git")
-        .setStyle(ButtonStyle.Link)
-        .setURL(`https://discord.com/channels/${message.guild.id}/${message.channel.id}`)
-    );
-
-    await logKanal.send({ embeds: [logEmbed], components: [row] }).catch(() => {});
-  }
-});
-
-// Slash komut: /kufur-engel
-client.on("interactionCreate", async interaction => {
-  if (!interaction.isChatInputCommand()) return;
-  if (interaction.commandName !== "kufur-engel") return;
-
-  const guildId = interaction.guild.id;
-  const isOwner = interaction.guild.ownerId === interaction.user.id;
-
-  if (!isOwner) {
-    return interaction.reply({
-      embeds: [new EmbedBuilder().setTitle("🚫 Yetki Yok").setDescription("Bu komutu sadece sunucu sahibi kullanabilir.").setColor(0xff0000)],
-      ephemeral: true
-    });
-  }
-
-  if (client.kufurEngelAktif) {
-    const embed = new EmbedBuilder()
-      .setTitle("ℹ️ Sistem Zaten Aktif")
-      .setDescription("Küfür engelleme sistemi zaten aktif.\n\nKapatmak için aşağıdaki butona bas.")
-      .setColor(0x00bfff);
-
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId("kapat").setLabel("🛑 KAPAT").setStyle(ButtonStyle.Danger)
-    );
-
-    const reply = await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
-
-    const collector = reply.createMessageComponentCollector({
-      time: 20000,
-      filter: i => i.user.id === interaction.user.id
-    });
-
-    collector.on("collect", async i => {
-      if (i.customId === "kapat") {
-        client.kufurEngelAktif = false;
-        client.kufurLogKanal.delete(guildId);
-
-        await i.update({
-          embeds: [new EmbedBuilder().setTitle("🛑 Sistem Kapatıldı").setColor(0xff0000)],
-          components: []
+        // ⚠️ Embedli uyarı mesajı (3 saniye sonra silinir)
+        message.channel.send({
+            embeds: [
+                {
+                    title: "⚠️ Uyarı",
+                    description: `${message.author}, bu sunucuda küfür kullanamazsın.`,
+                    color: 0xffcc00
+                }
+            ]
+        }).then(msg => {
+            setTimeout(() => msg.delete().catch(() => {}), 3000); // 3 saniye
         });
-      }
-    });
 
-    return;
-  }
+        // Log sistemi
+        const logChannelId = client.kufurLogKanal?.get(guildId);
+        const logChannel = message.guild.channels.cache.get(logChannelId);
 
-  const embed = new EmbedBuilder()
-    .setTitle("⚠️ Küfür Engelleme Sistemi")
-    .setDescription("Sistemi aktif etmek üzeresin.\n\n**AÇ** → sistemi başlatır\n**AÇMA** → iptal eder")
-    .setColor(0xffcc00);
-
-  const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId("ac").setLabel("✅ AÇ").setStyle(ButtonStyle.Success),
-    new ButtonBuilder().setCustomId("acma").setLabel("❌ AÇMA").setStyle(ButtonStyle.Secondary)
-  );
-
-  const reply = await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
-
-  const collector = reply.createMessageComponentCollector({
-    time: 20000,
-    filter: i => i.user.id === interaction.user.id
-  });
-
-  collector.on("collect", async i => {
-    if (i.customId === "ac") {
-      client.kufurEngelAktif = true;
-
-      const kanalSecenekleri = interaction.guild.channels.cache
-        .filter(c => c.type === ChannelType.GuildText)
-        .map(c => ({ label: c.name, value: c.id }))
-        .slice(0, 25);
-
-      const select = new StringSelectMenuBuilder()
-        .setCustomId("logsec")
-        .setPlaceholder("Log kanalı seç (isteğe bağlı)")
-        .addOptions(kanalSecenekleri);
-
-      const row = new ActionRowBuilder().addComponents(select);
-
-      const update = await i.update({
-        embeds: [new EmbedBuilder().setTitle("✅ Sistem Aktif").setDescription("İsteğe bağlı olarak log kanalını seçebilirsin.").setColor(0x00bfff)],
-        components: [row]
-      });
-
-      const menuCollector = update.createMessageComponentCollector({
-        time: 30000,
-        filter: i => i.user.id === interaction.user.id
-      });
-
-      menuCollector.on("collect", async i => {
-        const kanalID = i.values[0];
-        client.kufurLogKanal.set(guildId, kanalID);
-
-        await i.update({
-          embeds: [new EmbedBuilder().setTitle("📌 Log Kanalı Ayarlandı").setDescription(`<#${kanalID}> kanalına log gönderilecek.`).setColor(0x00bfff)],
-          components: []
-        });
-      });
+        if (logChannel) {
+            logChannel.send({
+                embeds: [
+                    {
+                        title: "📌 Küfür Tespit Edildi",
+                        description:
+                            `**Kullanıcı:** ${message.author}\n` +
+                            `**Kanal:** <#${message.channel.id}>\n` +
+                            `**Mesaj:** ${message.content}`,
+                        color: 0xff0000,
+                        timestamp: new Date()
+                    }
+                ]
+            });
+        }
     }
-
-    if (i.customId === "acma") {
-      await i.update({
-        embeds: [new EmbedBuilder().setTitle("❌ İşlem İptal Edildi").setColor(0xaaaaaa)],
-        components: []
-      });
-    }
-  });
 });
 
 ///// küüfür son
