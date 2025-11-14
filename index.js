@@ -207,12 +207,22 @@ client.on("messageCreate", async (message) => {
 //////// küfür engel
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 
+client.kufurEngelAktif = false;
+client.kufurLogKanal = new Map();
+
 client.on("messageCreate", async message => {
   if (!client.kufurEngelAktif) return;
   if (message.author.bot || !message.guild) return;
   if (!message.member || message.member.permissions.has("ManageMessages")) return;
 
-  const kufurKelimeleri = ["amk", "aq", "oç", "piç", "siktir", "orospu", "yarrak", "göt", "ananı", "sikerim"];
+  const kufurKelimeleri = [
+    "amk", "aq", "oç", "piç", "siktir", "sikerim", "sikeyim", "yarrak", "göt", "ananı", "ananı avradını",
+    "orospu", "orospu çocuğu", "pezevenk", "kahpe", "mal", "salak", "aptal", "gerizekalı", "embesil",
+    "ibne", "ibine", "dallama", "çük", "çükünü", "sikik", "sikimsonik", "sikik herif", "gavat", "kaltak",
+    "sürtük", "şerefsiz", "şerefsizlik", "şırfıntı", "top", "travesti", "seks", "sex", "fuck", "fucker",
+    "motherfucker", "bitch", "bastard", "dick", "pussy", "slut"
+  ];
+
   const içerik = message.content.toLowerCase();
   const kullanıcıAdı = message.author.username.toLowerCase();
 
