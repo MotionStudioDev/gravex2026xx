@@ -20,7 +20,10 @@ module.exports = {
 
     if (!isOwner) {
       return interaction.reply({
-        embeds: [new EmbedBuilder().setTitle("🚫 Yetki Yok").setDescription("Bu komutu sadece sunucu sahibi kullanabilir.").setColor(0xff0000)],
+        embeds: [new EmbedBuilder()
+          .setTitle("🚫 Yetki Yok")
+          .setDescription("Bu komutu sadece sunucu sahibi kullanabilir.")
+          .setColor(0xff0000)],
         ephemeral: true
       });
     }
@@ -35,9 +38,10 @@ module.exports = {
         new ButtonBuilder().setCustomId("kapat").setLabel("🛑 KAPAT").setStyle(ButtonStyle.Danger)
       );
 
-      const reply = await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
+      await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
+      const message = await interaction.fetchReply();
 
-      const collector = reply.createMessageComponentCollector({
+      const collector = message.createMessageComponentCollector({
         time: 20000,
         filter: i => i.user.id === interaction.user.id
       });
@@ -67,9 +71,10 @@ module.exports = {
       new ButtonBuilder().setCustomId("acma").setLabel("❌ AÇMA").setStyle(ButtonStyle.Secondary)
     );
 
-    const reply = await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
+    await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
+    const message = await interaction.fetchReply();
 
-    const collector = reply.createMessageComponentCollector({
+    const collector = message.createMessageComponentCollector({
       time: 20000,
       filter: i => i.user.id === interaction.user.id
     });
@@ -90,12 +95,17 @@ module.exports = {
 
         const row = new ActionRowBuilder().addComponents(select);
 
-        const update = await i.update({
-          embeds: [new EmbedBuilder().setTitle("✅ Sistem Aktif").setDescription("İsteğe bağlı olarak log kanalını seçebilirsin.").setColor(0x00bfff)],
+        await i.update({
+          embeds: [new EmbedBuilder()
+            .setTitle("✅ Sistem Aktif")
+            .setDescription("İsteğe bağlı olarak log kanalını seçebilirsin.")
+            .setColor(0x00bfff)],
           components: [row]
         });
 
-        const menuCollector = update.createMessageComponentCollector({
+        const message = await i.fetchReply();
+
+        const menuCollector = message.createMessageComponentCollector({
           time: 30000,
           filter: i => i.user.id === interaction.user.id
         });
@@ -105,7 +115,10 @@ module.exports = {
           client.kufurLogKanal.set(guildId, kanalID);
 
           await i.update({
-            embeds: [new EmbedBuilder().setTitle("📌 Log Kanalı Ayarlandı").setDescription(`<#${kanalID}> kanalına log gönderilecek.`).setColor(0x00bfff)],
+            embeds: [new EmbedBuilder()
+              .setTitle("📌 Log Kanalı Ayarlandı")
+              .setDescription(`<#${kanalID}> kanalına log gönderilecek.`)
+              .setColor(0x00bfff)],
             components: []
           });
         });
