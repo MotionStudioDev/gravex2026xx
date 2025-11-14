@@ -18,16 +18,19 @@ module.exports = {
     const guildId = interaction.guild.id;
     const isOwner = interaction.guild.ownerId === interaction.user.id;
 
+    if (!client.kufurLogKanal) client.kufurLogKanal = new Map();
+    if (!client.kufurEngelAktif) client.kufurEngelAktif = false;
+
     if (!isOwner) {
       return interaction.reply({
         embeds: [new EmbedBuilder()
           .setTitle("🚫 Yetki Yok")
           .setDescription("Bu komutu sadece sunucu sahibi kullanabilir.")
-          .setColor(0xff0000)],
-        ephemeral: true
+          .setColor(0xff0000)]
       });
     }
 
+    // ------------ SİSTEM ZATEN AÇIK -----------------
     if (client.kufurEngelAktif) {
       const embed = new EmbedBuilder()
         .setTitle("ℹ️ Sistem Zaten Aktif")
@@ -38,12 +41,11 @@ module.exports = {
         new ButtonBuilder().setCustomId("kapat").setLabel("🛑 KAPAT").setStyle(ButtonStyle.Danger)
       );
 
-      await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
-      const message = await interaction.fetchReply();
+      const msg = await interaction.reply({ embeds: [embed], components: [row] });
 
-      const collector = message.createMessageComponentCollector({
-        time: 20000,
-        filter: i => i.user.id === interaction.user.id
+      const collector = msg.createMessageComponentCollector({
+        filter: i => i.user.id === interaction.user.id,
+        time: 20000
       });
 
       collector.on("collect", async i => {
@@ -61,6 +63,7 @@ module.exports = {
       return;
     }
 
+    // ------------ SİSTEM KAPALI: AÇMA SOR -----------------
     const embed = new EmbedBuilder()
       .setTitle("⚠️ Küfür Engelleme Sistemi")
       .setDescription("Sistemi aktif etmek üzeresin.\n\n**AÇ** → sistemi başlatır\n**AÇMA** → iptal eder")
@@ -71,15 +74,15 @@ module.exports = {
       new ButtonBuilder().setCustomId("acma").setLabel("❌ AÇMA").setStyle(ButtonStyle.Secondary)
     );
 
-    await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
-    const message = await interaction.fetchReply();
+    const msg = await interaction.reply({ embeds: [embed], components: [row] });
 
-    const collector = message.createMessageComponentCollector({
-      time: 20000,
-      filter: i => i.user.id === interaction.user.id
+    const collector = msg.createMessageComponentCollector({
+      filter: i => i.user.id === interaction.user.id,
+      time: 20000
     });
 
     collector.on("collect", async i => {
+      // --- Aç ---
       if (i.customId === "ac") {
         client.kufurEngelAktif = true;
 
@@ -93,21 +96,19 @@ module.exports = {
           .setPlaceholder("Log kanalı seç (isteğe bağlı)")
           .addOptions(kanalSecenekleri);
 
-        const row = new ActionRowBuilder().addComponents(select);
-
         await i.update({
           embeds: [new EmbedBuilder()
             .setTitle("✅ Sistem Aktif")
             .setDescription("İsteğe bağlı olarak log kanalını seçebilirsin.")
             .setColor(0x00bfff)],
-          components: [row]
+          components: [new ActionRowBuilder().addComponents(select)]
         });
 
-        const message = await i.fetchReply();
+        const msg2 = await i.fetchReply();
 
-        const menuCollector = message.createMessageComponentCollector({
-          time: 30000,
-          filter: i => i.user.id === interaction.user.id
+        const menuCollector = msg2.createMessageComponentCollector({
+          filter: i => i.user.id === interaction.user.id,
+          time: 30000
         });
 
         menuCollector.on("collect", async i => {
@@ -124,6 +125,7 @@ module.exports = {
         });
       }
 
+      // --- Açma ---
       if (i.customId === "acma") {
         await i.update({
           embeds: [new EmbedBuilder().setTitle("❌ İşlem İptal Edildi").setColor(0xaaaaaa)],
