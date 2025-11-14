@@ -15,7 +15,6 @@ module.exports = {
     .setDescription("Küfür engelleme sistemini aç/kapat"),
 
   async execute(interaction) {
-    const client = interaction.client;
     const guildId = interaction.guild.id;
     const isOwner = interaction.guild.ownerId === interaction.user.id;
 
