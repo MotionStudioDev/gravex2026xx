@@ -107,6 +107,7 @@ client.login(token);
 
 ////////reklam 
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionsBitField } = require("discord.js");
+const db = require("quick.db");
 
 // Reklam kelimeleri (daha akıllı filtre)
 const REKLAM_KELIMELERI = [
