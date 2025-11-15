@@ -44,9 +44,12 @@ module.exports = {
   async execute(interaction, client) {
     if (!interaction.isButton()) return;
 
-    // ====== EVET (Sistemi Aç) ======
+    // Buton tıklandığında interaction'ı beklet
+    await interaction.deferUpdate();
+
+    // ===== Sistem Aç =====
     if (interaction.customId === "caps_ac") {
-      await interaction.update({
+      await interaction.editReply({
         content: "⏳ Lütfen bekleyiniz, sistem aktif ediliyor...",
         components: [],
       });
@@ -67,18 +70,18 @@ module.exports = {
       }, 1000);
     }
 
-    // ====== HAYIR (Talep reddedildi) ======
-    else if (interaction.customId === "caps_hayir") {
-      await interaction.update({
+    // ===== HAYIR =====
+    if (interaction.customId === "caps_hayir") {
+      await interaction.editReply({
         content: "❌ Talebiniz reddedilmiştir.",
         components: [],
       });
       setTimeout(() => interaction.deleteReply().catch(() => {}), 3000);
     }
 
-    // ====== KAPAT (Sistemi kapat) ======
-    else if (interaction.customId === "caps_kapat") {
-      await interaction.update({
+    // ===== Sistem Kapat =====
+    if (interaction.customId === "caps_kapat") {
+      await interaction.editReply({
         content: "⏳ Lütfen bekleyiniz, sistem kapatılıyor...",
         components: [],
       });
