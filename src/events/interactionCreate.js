@@ -37,3 +37,59 @@ module.exports = {
     }
   }
 };
+//// 
+module.exports = {
+  name: "interactionCreate",
+
+  async execute(interaction, client) {
+    if (!interaction.isButton()) return;
+
+    // ====== EVET (Sistemi Aç) ======
+    if (interaction.customId === "caps_ac") {
+      await interaction.update({
+        content: "⏳ Lütfen bekleyiniz, sistem aktif ediliyor...",
+        components: [],
+      });
+
+      setTimeout(async () => {
+        client.capsLockAktif = true;
+        await interaction.editReply({
+          content: "✅ **Sistem sunucuda aktif edildi!**\nKapatmak istiyorsanız **KAPAT** tuşuna basınız.",
+          components: [
+            new (require("discord.js").ActionRowBuilder)().addComponents(
+              new (require("discord.js").ButtonBuilder)()
+                .setCustomId("caps_kapat")
+                .setLabel("KAPAT")
+                .setStyle(require("discord.js").ButtonStyle.Danger)
+            ),
+          ],
+        });
+      }, 1000);
+    }
+
+    // ====== HAYIR (Talep reddedildi) ======
+    else if (interaction.customId === "caps_hayir") {
+      await interaction.update({
+        content: "❌ Talebiniz reddedilmiştir.",
+        components: [],
+      });
+      setTimeout(() => interaction.deleteReply().catch(() => {}), 3000);
+    }
+
+    // ====== KAPAT (Sistemi kapat) ======
+    else if (interaction.customId === "caps_kapat") {
+      await interaction.update({
+        content: "⏳ Lütfen bekleyiniz, sistem kapatılıyor...",
+        components: [],
+      });
+
+      setTimeout(async () => {
+        client.capsLockAktif = false;
+        await interaction.editReply({
+          content: "🛑 **Sistem kapatıldı.**",
+          components: [],
+        });
+      }, 1000);
+    }
+  },
+};
