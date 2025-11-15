@@ -278,12 +278,12 @@ client.on("messageCreate", async message => {
 
   const içerik = message.content;
 
-  // Tüm harfleri filtrele (Türkçe dahil)
-  const harfler = [...içerik].filter(c => c.match(/[a-zA-ZçÇğĞıİöÖşŞüÜ]/u));
+  // Tüm harfleri al (Türkçe dahil)
+  const harfler = [...içerik].filter(c => c.match(/[a-zA-ZçğıöşüÇĞİÖŞÜ]/u));
   if (harfler.length < 5) return;
 
-  // Büyük harf oranı
-  const büyükHarfSayısı = harfler.filter(h => h === h.toLocaleUpperCase("tr")).length;
+  // Büyük harf sayısı (karakterin kendisi büyükse sayılır)
+  const büyükHarfSayısı = harfler.filter(h => h === h.toLocaleUpperCase("tr") && h !== h.toLocaleLowerCase("tr")).length;
   const oran = büyükHarfSayısı / harfler.length;
 
   if (oran >= 0.8) {
