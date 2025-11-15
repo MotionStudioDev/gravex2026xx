@@ -272,3 +272,166 @@ client.on("guildMemberAdd", async member => {
     }
   });
 });
+/////////anti-raid son
+/////// mod-log
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+
+client.modLogAktifGuilds = new Map();
+client.modLogKanal = new Map();
+
+// 🔨 Yardımcı fonksiyon
+function logModEvent(guildId, embed, messageURL = null) {
+  const kanalId = client.modLogKanal.get(guildId);
+  const kanal = client.guilds.cache.get(guildId)?.channels.cache.get(kanalId);
+  if (!kanal) return;
+
+  const row = messageURL
+    ? new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setLabel("Mesaja Git")
+          .setStyle(ButtonStyle.Link)
+          .setURL(messageURL)
+      )
+    : null;
+
+  kanal.send({ embeds: [embed], components: row ? [row] : [] }).catch(() => {});
+}
+
+// 🗑️ Mesaj silindi
+client.on("messageDelete", async message => {
+  const guildId = message.guild?.id;
+  if (!guildId || !client.modLogAktifGuilds.get(guildId)) return;
+
+  const embed = new EmbedBuilder()
+    .setTitle("🗑️ Mesaj Silindi")
+    .addFields(
+      { name: "Kullanıcı", value: `${message.author}`, inline: true },
+      { name: "Kanal", value: `${message.channel}`, inline: true },
+      { name: "İçerik", value: message.content?.slice(0, 1000) || "*Boş mesaj*", inline: false }
+    )
+    .setColor(0xffcc00)
+    .setTimestamp();
+
+  const url = `https://discord.com/channels/${guildId}/${message.channel.id}/${message.id}`;
+  logModEvent(guildId, embed, url);
+});
+
+// 📁 Kanal oluşturuldu
+client.on("channelCreate", channel => {
+  const guildId = channel.guild?.id;
+  if (!guildId || !client.modLogAktifGuilds.get(guildId)) return;
+
+  const embed = new EmbedBuilder()
+    .setTitle("📁 Kanal Oluşturuldu")
+    .setDescription(`Yeni kanal oluşturuldu: <#${channel.id}>`)
+    .setColor(0x00ccff)
+    .setTimestamp();
+
+  logModEvent(guildId, embed);
+});
+
+// ❌ Kanal silindi
+client.on("channelDelete", channel => {
+  const guildId = channel.guild?.id;
+  if (!guildId || !client.modLogAktifGuilds.get(guildId)) return;
+
+  const embed = new EmbedBuilder()
+    .setTitle("❌ Kanal Silindi")
+    .setDescription(`Silinen kanal: \`${channel.name}\``)
+    .setColor(0xff0000)
+    .setTimestamp();
+
+  logModEvent(guildId, embed);
+});
+
+// 🎭 Rol oluşturuldu
+client.on("roleCreate", role => {
+  const guildId = role.guild?.id;
+  if (!guildId || !client.modLogAktifGuilds.get(guildId)) return;
+
+  const embed = new EmbedBuilder()
+    .setTitle("🎭 Rol Oluşturuldu")
+    .setDescription(`Yeni rol oluşturuldu: \`${role.name}\``)
+    .setColor(0x00ff99)
+    .setTimestamp();
+
+  logModEvent(guildId, embed);
+});
+
+// 🗑️ Rol silindi
+client.on("roleDelete", role => {
+  const guildId = role.guild?.id;
+  if (!guildId || !client.modLogAktifGuilds.get(guildId)) return;
+
+  const embed = new EmbedBuilder()
+    .setTitle("🗑️ Rol Silindi")
+    .setDescription(`Silinen rol: \`${role.name}\``)
+    .setColor(0xff6666)
+    .setTimestamp();
+
+  logModEvent(guildId, embed);
+});
+
+// 🔊 Ses kanal hareketleri
+client.on("voiceStateUpdate", (oldState, newState) => {
+  const guildId = newState.guild.id;
+  if (!client.modLogAktifGuilds.get(guildId)) return;
+
+  const user = newState.member.user;
+
+  if (!oldState.channel && newState.channel) {
+    const embed = new EmbedBuilder()
+      .setTitle("🔊 Ses Kanalına Giriş")
+      .setDescription(`**${user.tag}** → **${newState.channel.name}**`)
+      .setColor(0x00cc99)
+      .setTimestamp();
+    logModEvent(guildId, embed);
+  } else if (oldState.channel && !newState.channel) {
+    const embed = new EmbedBuilder()
+      .setTitle("🔇 Ses Kanalından Çıkış")
+      .setDescription(`**${user.tag}** ← **${oldState.channel.name}**`)
+      .setColor(0xff6666)
+      .setTimestamp();
+    logModEvent(guildId, embed);
+  } else if (oldState.channelId !== newState.channelId) {
+    const embed = new EmbedBuilder()
+      .setTitle("🔁 Ses Kanalı Değiştirildi")
+      .setDescription(`**${user.tag}**: **${oldState.channel.name}** → **${newState.channel.name}**`)
+      .setColor(0xffcc00)
+      .setTimestamp();
+    logModEvent(guildId, embed);
+  }
+});
+
+// ✏️ Kullanıcı adı değişti
+client.on("userUpdate", (oldUser, newUser) => {
+  client.guilds.cache.forEach(guild => {
+    if (!client.modLogAktifGuilds.get(guild.id)) return;
+    if (!guild.members.cache.has(newUser.id)) return;
+
+    if (oldUser.username !== newUser.username) {
+      const embed = new EmbedBuilder()
+        .setTitle("✏️ Kullanıcı Adı Değişti")
+        .setDescription(`**${oldUser.tag}** → **${newUser.tag}**`)
+        .setColor(0x3399ff)
+        .setTimestamp();
+      logModEvent(guild.id, embed);
+    }
+  });
+});
+
+// 📝 Takma ad değişti
+client.on("guildMemberUpdate", (oldMember, newMember) => {
+  const guildId = newMember.guild.id;
+  if (!client.modLogAktifGuilds.get(guildId)) return;
+
+  if (oldMember.nickname !== newMember.nickname) {
+    const embed = new EmbedBuilder()
+      .setTitle("📝 Takma Ad Değişti")
+      .setDescription(`**${newMember.user.tag}**\n\`${oldMember.nickname || "Yok"}\` → \`${newMember.nickname || "Yok"}\``)
+      .setColor(0x9966ff)
+      .setTimestamp();
+    logModEvent(guildId, embed);
+  }
+});
+//////////////// mod-log son
