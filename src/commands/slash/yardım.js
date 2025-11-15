@@ -25,6 +25,7 @@ module.exports = {
         { name: "sil", desc: "100 adet mesaj siler" },
         { name: "mod-log", desc: "Sunucu kayıtlarını alır" },
         { name: "unban", desc: "Banlanan kişinin banı kaldırılır" },
+        { name: "anti-raid-bot", desc: "Sunucuya izinsiz bot girmesini engeller." },
         { name: "kick", desc: "Kullanıcıyı sunucudan atar" }
       ],
       "Eğlence": [
