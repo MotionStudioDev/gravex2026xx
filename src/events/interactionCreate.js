@@ -37,20 +37,3 @@ module.exports = {
     }
   }
 };
-////
-client.on("interactionCreate", async interaction => {
-  if (!interaction.isButton()) return;
-  const { customId, guild } = interaction;
-
-  if (customId === "modlog-kapat") {
-    interaction.client.modLogAktifGuilds?.delete(guild.id);
-    interaction.client.modLogKanal?.delete(guild.id);
-
-    await interaction.update({
-      embeds: [new EmbedBuilder()
-        .setDescription("✅ Mod-Log sistemi kapatıldı.")
-        .setColor(0x00aa00)],
-      components: []
-    });
-  }
-});
