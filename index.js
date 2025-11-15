@@ -270,21 +270,29 @@ client.on("messageCreate", async message => {
 ///// küüfür son
 //caps
 // ======================================================
+// GEREKLİ DISCORD NESNELERİ — SADECE 1 KEZ
+// ======================================================
+const {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  EmbedBuilder,
+  PermissionFlagsBits
+} = require("discord.js");
+
+
+// ======================================================
 // CAPS-LOCK SİSTEM DURUMU
 // ======================================================
 client.capsLockAktif = false;
 
 
 // ======================================================
-// /caps-lock komutundan tetiklenen özel event
+// /caps-lock KOMUTUNDAN TETİKLENEN ÖZEL EVENT
 // ======================================================
 client.on("capsCommandUsed", async (interaction) => {
 
-  const { ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } = require("discord.js");
-
-  // -----------------------------------------------
   // Yetki kontrolü
-  // -----------------------------------------------
   if (
     !interaction.member.permissions.has(PermissionFlagsBits.Administrator) &&
     interaction.guild.ownerId !== interaction.member.id
@@ -294,9 +302,7 @@ client.on("capsCommandUsed", async (interaction) => {
     return;
   }
 
-  // -----------------------------------------------
-  // SİSTEM ZATEN AÇIKSA
-  // -----------------------------------------------
+  // Sistem zaten açık
   if (client.capsLockAktif) {
     const kapatBtn = new ButtonBuilder()
       .setCustomId("caps_kapat")
@@ -304,14 +310,12 @@ client.on("capsCommandUsed", async (interaction) => {
       .setStyle(ButtonStyle.Danger);
 
     return interaction.editReply({
-      content: "⚠️ **Sistem sunucuda aktif durumda!**\nKapatmak için **KAPAT** butonuna tıklayın!",
+      content: "⚠️ **Sistem sunucuda aktif durumda!**\nKapatmak için **KAPAT** butonuna tıkla!",
       components: [new ActionRowBuilder().addComponents(kapatBtn)],
     });
   }
 
-  // -----------------------------------------------
-  // SİSTEM KAPALI → Kullanıcıya sor
-  // -----------------------------------------------
+  // Sistem kapalı → kullanıcıya sor
   const yesBtn = new ButtonBuilder()
     .setCustomId("caps_ac")
     .setLabel("EVET")
@@ -337,11 +341,7 @@ client.on("interactionCreate", async (interaction) => {
 
   await interaction.deferUpdate();
 
-  const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
-
-  // ---------------------------
-  // EVET → SİSTEMİ AÇ
-  // ---------------------------
+  // EVET → sistemi aç
   if (interaction.customId === "caps_ac") {
     await interaction.editReply({
       content: "⏳ Lütfen bekleyiniz, sistem aktif ediliyor...",
@@ -365,9 +365,7 @@ client.on("interactionCreate", async (interaction) => {
     }, 1000);
   }
 
-  // ---------------------------
-  // HAYIR → REDDEDİLDİ
-  // ---------------------------
+  // HAYIR
   if (interaction.customId === "caps_hayir") {
     await interaction.editReply({
       content: "❌ Talebiniz reddedilmiştir.",
@@ -377,9 +375,7 @@ client.on("interactionCreate", async (interaction) => {
     setTimeout(() => interaction.deleteReply().catch(() => {}), 3000);
   }
 
-  // ---------------------------
-  // KAPAT → SİSTEMİ KAPAT
-  // ---------------------------
+  // KAPAT
   if (interaction.customId === "caps_kapat") {
     await interaction.editReply({
       content: "⏳ Lütfen bekleyiniz, sistem kapatılıyor...",
@@ -399,10 +395,8 @@ client.on("interactionCreate", async (interaction) => {
 
 
 // ======================================================
-// CAPS LOCK ENGEL KORUMASI (Mesaj Silme)
+// CAPS LOCK ENGEL
 // ======================================================
-const { EmbedBuilder, PermissionFlagsBits } = require("discord.js");
-
 client.on("messageCreate", async (message) => {
   if (!client.capsLockAktif) return;
   if (!message.guild || message.author.bot) return;
@@ -431,5 +425,6 @@ client.on("messageCreate", async (message) => {
     setTimeout(() => warn.delete().catch(() => {}), 2000);
   }
 });
+
 
 // caps son
