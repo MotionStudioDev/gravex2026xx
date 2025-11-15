@@ -269,26 +269,46 @@ client.on("messageCreate", async message => {
 
 ///// küüfür son
 ///// caps lock 
-client.on("messageCreate", async message => {
+const { EmbedBuilder, PermissionFlagsBits } = require("discord.js");
+
+client.on("messageCreate", async (message) => {
   if (!client.capsLockAktif) return;
-  if (message.author.bot || !message.guild) return;
-  if (!message.member || message.member.permissions.has("ManageMessages")) return;
+  if (!message.guild || message.author.bot) return;
 
-  const içerik = message.content;
-  const harfler = içerik.replace(/[^a-zA-ZçÇğĞıİöÖşŞüÜ]/g, "");
-  const oran = harfler.length > 0
-    ? harfler.split("").filter(h => h === h.toLocaleUpperCase("tr")).length / harfler.length
-    : 0;
+  // Mesaj yetkili tarafından yazıldıysa engelleme
+  if (message.member.permissions.has(PermissionFlagsBits.ManageMessages)) return;
 
-  if (harfler.length >= 5 && oran >= 0.8) {
+  const content = message.content;
+
+  // Sadece harfleri al
+  const letters = content.replace(/[^a-zA-ZçÇğĞıİöÖşŞüÜ]/g, "");
+
+  if (letters.length < 5) return; // 5 harften azsa işlem yok
+
+  // Büyük harf oranı
+  const upperCount = [...letters].filter(
+    (h) => h === h.toLocaleUpperCase("tr")
+  ).length;
+
+  const ratio = upperCount / letters.length;
+
+  if (ratio >= 0.8) {
+    // Mesajı sil
     await message.delete().catch(() => {});
+
     const embed = new EmbedBuilder()
       .setTitle("🔇 Büyük Harf Engeli")
-      .setDescription(`**${message.author.tag}** tarafından gönderilen mesaj büyük harf içerdiği için silindi.`)
+      .setDescription(
+        `**${message.author.tag}** tarafından gönderilen mesaj çok fazla büyük harf içerdiği için silindi.`
+      )
       .setColor(0xffcc00);
 
-    const uyarı = await message.channel.send({ embeds: [embed] }).catch(() => {});
-    setTimeout(() => uyarı?.delete().catch(() => {}), 2000);
+    const warnMsg = await message.channel
+      .send({ embeds: [embed] })
+      .catch(() => {});
+
+    setTimeout(() => warnMsg?.delete().catch(() => {}), 2000);
   }
 });
+
 ///// caps lock son
