@@ -274,8 +274,6 @@ client.on("guildMemberAdd", async member => {
 });
 /////////anti-raid son
 /////// mod-log
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
-
 client.modLogAktifGuilds = new Map();
 client.modLogKanal = new Map();
 
