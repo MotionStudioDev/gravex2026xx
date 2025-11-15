@@ -14,8 +14,20 @@ module.exports = {
     .setDescription("Caps Lock engelleme sistemini aç/kapat"),
 
   async execute(interaction) {
-    const client = interaction.client;
-    const guildId = interaction.guild.id;
+    const member = interaction.member;
+    const isKurucu = interaction.guild.ownerId === interaction.user.id;
+    const isYonetici = member.permissions.has("ManageGuild");
+
+    if (!isKurucu && !isYonetici) {
+      const embed = new EmbedBuilder()
+        .setTitle("🚫 Yetki Yok")
+        .setDescription("Bu komutu sadece **sunucu sahibi** veya **yönetici yetkisine sahip** kişiler kullanabilir.")
+        .setColor(0xff0000);
+
+      const reply = await interaction.reply({ embeds: [embed], ephemeral: false });
+      setTimeout(() => interaction.deleteReply().catch(() => {}), 3000);
+      return;
+    }
 
     // Sistem zaten aktifse doğrudan KAPAT seçeneği sun
     if (capsLockAktif) {
