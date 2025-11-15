@@ -269,17 +269,8 @@ client.on("messageCreate", async message => {
 
 ///// küüfür son
 //anti raid bot
-const {
-  Client,
-  Collection,
-  GatewayIntentBits,
-  Partials,
-  EmbedBuilder,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  PermissionsBitField
-} = require("discord.js"); 
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionsBitField } = require("discord.js");
+
 
 client.antiBotRaidAktif = false;
 
