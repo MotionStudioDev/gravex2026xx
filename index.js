@@ -269,44 +269,46 @@ client.on("messageCreate", async message => {
 
 ///// küüfür son
 //caps
-const { Client, GatewayIntentBits, EmbedBuilder } = require("discord.js");
-const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
-    ]
-});
+if (!global.client) {
+    const { Client, GatewayIntentBits, EmbedBuilder } = require("discord.js");
 
-// CapsLock kontrolünü aç
-client.capsLockAktif = true;
+    global.client = new Client({
+        intents: [
+            GatewayIntentBits.Guilds,
+            GatewayIntentBits.GuildMessages,
+            GatewayIntentBits.MessageContent
+        ]
+    });
 
-client.on("messageCreate", async message => {
-    if (!client.capsLockAktif) return;
-    if (!message.guild || message.author.bot) return;
-    if (!message.member || message.member.permissions.has("ManageMessages")) return;
+    // CapsLock kontrolü
+    global.client.capsLockAktif = true;
 
-    const içerik = message.content;
+    global.client.on("messageCreate", async message => {
+        if (!global.client.capsLockAktif) return;
+        if (!message.guild || message.author.bot) return;
+        if (!message.member || message.member.permissions.has("ManageMessages")) return;
 
-    // Tüm harfleri filtrele (Türkçe dahil)
-    const harfler = [...içerik].filter(c => c.match(/[a-zA-ZçÇğĞıİöÖşŞüÜ]/u));
-    if (harfler.length < 5) return;
+        const içerik = message.content;
 
-    // Büyük harf oranı
-    const büyükHarfSayısı = harfler.filter(h => h === h.toLocaleUpperCase("tr")).length;
-    const oran = büyükHarfSayısı / harfler.length;
+        // Tüm harfleri filtrele (Türkçe dahil)
+        const harfler = [...içerik].filter(c => c.match(/[a-zA-ZçÇğĞıİöÖşŞüÜ]/u));
+        if (harfler.length < 5) return;
 
-    if (oran >= 0.8) {
-        await message.delete().catch(() => {});
+        // Büyük harf oranı
+        const büyükHarfSayısı = harfler.filter(h => h === h.toLocaleUpperCase("tr")).length;
+        const oran = büyükHarfSayısı / harfler.length;
 
-        const embed = new EmbedBuilder()
-            .setTitle("🔇 Büyük Harf Engeli")
-            .setDescription(`**${message.author.tag}** tarafından gönderilen mesaj büyük harf içerdiği için silindi.`)
-            .setColor(0xffcc00);
+        if (oran >= 0.8) {
+            await message.delete().catch(() => {});
 
-        const uyarı = await message.channel.send({ embeds: [embed] }).catch(() => {});
-        setTimeout(() => uyarı?.delete().catch(() => {}), 5000); // 5 saniye bekle
-    }
-});
+            const embed = new EmbedBuilder()
+                .setTitle("🔇 Büyük Harf Engeli")
+                .setDescription(`**${message.author.tag}** tarafından gönderilen mesaj büyük harf içerdiği için silindi.`)
+                .setColor(0xffcc00);
+
+            const uyarı = await message.channel.send({ embeds: [embed] }).catch(() => {});
+            setTimeout(() => uyarı?.delete().catch(() => {}), 5000); // 5 saniye bekle
+        }
+    });
 
 // caps son
