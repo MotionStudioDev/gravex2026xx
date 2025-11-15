@@ -269,7 +269,32 @@ client.on("messageCreate", async message => {
 
 ///// küüfür son
 //caps
+const { EmbedBuilder } = require("discord.js");
 
+client.on("messageCreate", async message => {
+  if (!client.capsLockAktif) return;
+  if (!message.guild || message.author.bot) return;
+  if (!message.member || message.member.permissions.has("ManageMessages")) return;
 
+  const içerik = message.content;
 
+  // Sadece harfleri al (Türkçe dahil)
+  const harfler = [...içerik].filter(c => c.match(/[a-zA-ZçÇğĞıİöÖşŞüÜ]/u));
+  if (harfler.length < 5) return;
+
+  // Büyük harf sayısı
+  const büyükHarfSayısı = harfler.filter(h => h === h.toLocaleUpperCase("tr")).length;
+  const oran = büyükHarfSayısı / harfler.length;
+
+  if (oran >= 0.8) {
+    await message.delete().catch(() => {});
+    const embed = new EmbedBuilder()
+      .setTitle("🔇 Büyük Harf Engeli")
+      .setDescription(`**${message.author.tag}** tarafından gönderilen mesaj büyük harf içerdiği için silindi.`)
+      .setColor(0xffcc00);
+
+    const uyarı = await message.channel.send({ embeds: [embed] }).catch(() => {});
+    setTimeout(() => uyarı?.delete().catch(() => {}), 2000);
+  }
+});
 // caps son
