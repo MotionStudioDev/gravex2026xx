@@ -278,11 +278,11 @@ client.on("messageCreate", async message => {
 
   const içerik = message.content;
 
-  // Sadece harfleri al (Türkçe dahil)
+  // Tüm harfleri filtrele (Türkçe dahil)
   const harfler = [...içerik].filter(c => c.match(/[a-zA-ZçÇğĞıİöÖşŞüÜ]/u));
   if (harfler.length < 5) return;
 
-  // Büyük harf sayısı
+  // Büyük harf oranı
   const büyükHarfSayısı = harfler.filter(h => h === h.toLocaleUpperCase("tr")).length;
   const oran = büyükHarfSayısı / harfler.length;
 
