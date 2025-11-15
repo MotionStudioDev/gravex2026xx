@@ -276,8 +276,9 @@ client.on("messageCreate", async message => {
 
   const içerik = message.content;
   const harfler = içerik.replace(/[^a-zA-ZçÇğĞıİöÖşŞüÜ]/g, "");
-  const büyükHarfler = harfler.split("").filter(h => h === h.toLocaleUpperCase("tr"));
-  const oran = harfler.length > 0 ? büyükHarfler.length / harfler.length : 0;
+  const oran = harfler.length > 0
+    ? harfler.split("").filter(h => h === h.toLocaleUpperCase("tr")).length / harfler.length
+    : 0;
 
   if (harfler.length >= 5 && oran >= 0.8) {
     await message.delete().catch(() => {});
