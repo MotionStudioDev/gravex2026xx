@@ -1,57 +1,48 @@
 const {
   SlashCommandBuilder,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  PermissionFlagsBits
+  EmbedBuilder
 } = require("discord.js");
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("caps-lock")
-    .setDescription("Caps-Lock engelleme sistemini açıp kapatmanızı sağlar."),
+    .setDescription("Büyük harf engelleme sistemini aç/kapat"),
 
-  async execute(interaction, client) {
-    // Önce yanıt süresini başlat (Uygulama yanıt vermedi hatasını %100 engeller)
-    await interaction.deferReply({ ephemeral: false });
+  async execute(interaction) {
+    const client = interaction.client;
+    const member = interaction.member;
+    const isKurucu = interaction.guild.ownerId === interaction.user.id;
+    const isYonetici = member.permissions.has("ManageGuild");
 
-    // Yetki kontrolü
-    if (
-      !interaction.member.permissions.has(PermissionFlagsBits.Administrator) &&
-      interaction.guild.ownerId !== interaction.member.id
-    ) {
-      await interaction.editReply("❌ Bu komutu kullanmak için **Yönetici** yetkisine sahip olmalısınız!");
+    if (!isKurucu && !isYonetici) {
+      const embed = new EmbedBuilder()
+        .setTitle("🚫 Yetki Yok")
+        .setDescription("Bu komutu sadece **sunucu sahibi** veya **yönetici yetkisine sahip** kişiler kullanabilir.")
+        .setColor(0xff0000);
+
+      const reply = await interaction.reply({ embeds: [embed], ephemeral: false });
       setTimeout(() => interaction.deleteReply().catch(() => {}), 3000);
       return;
     }
 
-    // Sistem zaten aktif
     if (client.capsLockAktif) {
-      const closeBtn = new ButtonBuilder()
-        .setCustomId("caps_kapat")
-        .setLabel("KAPAT")
-        .setStyle(ButtonStyle.Danger);
+      client.capsLockAktif = false;
 
-      return interaction.editReply({
-        content: "⚠️ **Sistem zaten aktif!**\nKapatmak için **KAPAT** butonuna tıklayın.",
-        components: [new ActionRowBuilder().addComponents(closeBtn)],
+      await interaction.reply({
+        embeds: [new EmbedBuilder()
+          .setTitle("🛑 Sistem Kapatıldı")
+          .setDescription("Büyük harf engelleme sistemi devre dışı bırakıldı.")
+          .setColor(0xff0000)]
+      });
+    } else {
+      client.capsLockAktif = true;
+
+      await interaction.reply({
+        embeds: [new EmbedBuilder()
+          .setTitle("✅ Sistem Aktif Edildi")
+          .setDescription("Büyük harf engelleme sistemi aktif hale getirildi.")
+          .setColor(0x00aa00)]
       });
     }
-
-    // Sistem kapalı → kullanıcıya sor
-    const yesBtn = new ButtonBuilder()
-      .setCustomId("caps_ac")
-      .setLabel("EVET")
-      .setStyle(ButtonStyle.Success);
-
-    const noBtn = new ButtonBuilder()
-      .setCustomId("caps_hayir")
-      .setLabel("HAYIR")
-      .setStyle(ButtonStyle.Danger);
-
-    return interaction.editReply({
-      content: "⚠️ **Dikkat!** Caps-Lock sistemi aktif edilmek üzere.\nSistemi açmak istiyor musunuz?",
-      components: [new ActionRowBuilder().addComponents(yesBtn, noBtn)],
-    });
-  },
+  }
 };
