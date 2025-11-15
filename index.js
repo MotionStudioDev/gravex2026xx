@@ -175,7 +175,8 @@ client.on("messageCreate", async message => {
   const kufurler = [
     "amk", "aq", "aQ", "siktir", "orospu", "piç",
     "sik", "yarrak", "amına", "amcık", "göt",
-    "mal", "salak", "gerizekalı"
+    "mal", "salak", "gerizekalı", "oe", "or",
+    "orospu çoçugu", "orospu cocugu", "ananı", "ananı sikim", 
   ];
 
   const içerik = message.content.toLowerCase();
