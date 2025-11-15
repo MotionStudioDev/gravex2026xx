@@ -197,11 +197,16 @@ client.on("messageCreate", async message => {
 });
 
 // Anti-raid bot koruması
-client.antiBotRaidAktif = false;
+client.antiBotRaidAktifGuilds = new Map();
+client.antiBotRaidWhitelist = new Map();
 
 client.on("guildMemberAdd", async member => {
-  if (!client.antiBotRaidAktif) return;
+  const guild = member.guild;
+  if (!client.antiBotRaidAktifGuilds.get(guild.id)) return;
   if (!member.user.bot) return;
+
+  const whitelist = client.antiBotRaidWhitelist.get(guild.id) || [];
+  if (whitelist.includes(member.user.id)) return;
 
   try {
     await member.kick("Anti-Raid bot koruması");
@@ -209,16 +214,61 @@ client.on("guildMemberAdd", async member => {
     console.error(`Bot kicklenemedi: ${member.user.tag}`, err);
   }
 
-  const kanal = member.guild.systemChannel || member.guild.channels.cache.find(c =>
-    c.type === 0 && c.permissionsFor(member.guild.members.me).has("SendMessages")
+  const embed = new EmbedBuilder()
+    .setTitle("🚨 Bot Girişi Engellendi")
+    .setDescription(`**${member.user.tag}** adlı bot sunucuya giriş yaptı ve **kicklendi**.\n\nBu botun girişine izin vermek ister misiniz?`)
+    .setColor(0xff0000);
+
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId(`bot-evet-${member.user.id}`).setLabel("✅ EVET").setStyle(ButtonStyle.Success),
+    new ButtonBuilder().setCustomId(`bot-hayir-${member.user.id}`).setLabel("❌ HAYIR").setStyle(ButtonStyle.Secondary)
   );
 
-  if (kanal) {
-    const embed = new EmbedBuilder()
-      .setTitle("🚨 Anti-Raid Bot Koruması")
-      .setDescription(`Bot tespit edildi ve sunucudan atıldı: **${member.user.tag}**`)
-      .setColor(0xff0000);
+  const yöneticiler = guild.members.cache.filter(m =>
+    m.permissions.has("ManageGuild") || m.id === guild.ownerId
+  );
 
-    kanal.send({ embeds: [embed] }).catch(() => {});
-  }
+  yöneticiler.forEach(async admin => {
+    try {
+      const msg = await admin.send({ embeds: [embed], components: [row] });
+
+      const collector = msg.createMessageComponentCollector({
+        time: 30000,
+        filter: i => i.user.id === admin.id
+      });
+
+      collector.on("collect", async i => {
+        if (i.customId === `bot-evet-${member.user.id}`) {
+          await i.update({
+            embeds: [new EmbedBuilder().setDescription("⏳ Lütfen bekleyin, gerekli izinler veriliyor...").setColor(0xffcc00)],
+            components: []
+          });
+
+          setTimeout(() => {
+            const wl = client.antiBotRaidWhitelist.get(guild.id) || [];
+            wl.push(member.user.id);
+            client.antiBotRaidWhitelist.set(guild.id, wl);
+
+            msg.edit({
+              embeds: [new EmbedBuilder()
+                .setDescription("✅ Sunucuya giriş yapacak botun izinleri aktif edildi!")
+                .setColor(0x00aa00)],
+              components: []
+            });
+          }, 2000);
+        }
+
+        if (i.customId === `bot-hayir-${member.user.id}`) {
+          await i.update({
+            embeds: [new EmbedBuilder()
+              .setDescription("❌ Bu bot sunucuya tekrar giriş yaparsa otomatik kicklenecek.")
+              .setColor(0xff0000)],
+            components: []
+          });
+        }
+      });
+    } catch (err) {
+      console.error(`DM gönderilemedi: ${admin.user.tag}`, err);
+    }
+  });
 });
