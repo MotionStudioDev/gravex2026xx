@@ -269,19 +269,97 @@ client.on("messageCreate", async message => {
 
 ///// küüfür son
 //caps
+// ========================================================
+// CAPS LOCK DURUMU
+// ========================================================
+client.capsLockAktif = false;
+
+
+// ========================================================
+// BUTTON EVENTLERİ (EVET - HAYIR - KAPAT)
+// ========================================================
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isButton()) return;
+
+  // Butonlara basıldığını Discord'a bildirmek için
+  await interaction.deferUpdate();
+
+  const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+
+  // ========== SİSTEMİ AÇ ==========
+  if (interaction.customId === "caps_ac") {
+    await interaction.editReply({
+      content: "⏳ Lütfen bekleyiniz, sistem aktif ediliyor...",
+      components: [],
+    });
+
+    setTimeout(async () => {
+      client.capsLockAktif = true;
+
+      const kapatButton = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId("caps_kapat")
+          .setLabel("KAPAT")
+          .setStyle(ButtonStyle.Danger)
+      );
+
+      await interaction.editReply({
+        content: "✅ **Sistem sunucuda aktif edildi!**\nKapatmak istiyorsanız **KAPAT** tuşuna basınız.",
+        components: [kapatButton],
+      });
+    }, 1000);
+  }
+
+  // ========== HAYIR ==========
+  if (interaction.customId === "caps_hayir") {
+    await interaction.editReply({
+      content: "❌ Talebiniz reddedilmiştir.",
+      components: [],
+    });
+
+    setTimeout(() => interaction.deleteReply().catch(() => {}), 3000);
+  }
+
+  // ========== SİSTEMİ KAPAT ==========
+  if (interaction.customId === "caps_kapat") {
+    await interaction.editReply({
+      content: "⏳ Lütfen bekleyiniz, sistem kapatılıyor...",
+      components: [],
+    });
+
+    setTimeout(async () => {
+      client.capsLockAktif = false;
+
+      await interaction.editReply({
+        content: "🛑 **Sistem kapatıldı.**",
+        components: [],
+      });
+    }, 1000);
+  }
+});
+
+
+// ========================================================
+// CAPS LOCK ENGEL KORUMASI
+// ========================================================
 const { EmbedBuilder, PermissionFlagsBits } = require("discord.js");
 
 client.on("messageCreate", async (message) => {
-  if (!client.capsLockAktif) return;
+  if (!client.capsLockAktif) return;           // Sistem kapalı → dur
   if (!message.guild || message.author.bot) return;
 
+  // Yetkilileri engelleme
   if (message.member.permissions.has(PermissionFlagsBits.ManageMessages))
     return;
 
   const letters = message.content.replace(/[^a-zA-ZçÇğĞıİöÖşŞüÜ]/g, "");
+
   if (letters.length < 5) return;
 
-  const upperCount = [...letters].filter((h) => h === h.toLocaleUpperCase("tr")).length;
+  const upperCount = [...letters].filter(
+    (h) => h === h.toLocaleUpperCase("tr")
+  ).length;
+
   const ratio = upperCount / letters.length;
 
   if (ratio >= 0.8) {
@@ -296,4 +374,5 @@ client.on("messageCreate", async (message) => {
     setTimeout(() => warn.delete().catch(() => {}), 2000);
   }
 });
+
 // caps son
