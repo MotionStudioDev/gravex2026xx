@@ -268,7 +268,33 @@ client.on("messageCreate", async message => {
 });
 
 ///// küüfür son
-//caps
+//anti raid bot
+const { EmbedBuilder } = require("discord.js");
 
+client.antiBotRaidAktif = false;
 
-// caps son
+client.on("guildMemberAdd", async member => {
+  if (!client.antiBotRaidAktif) return;
+  if (!member.user.bot) return;
+
+  try {
+    await member.kick("Anti-Raid bot koruması");
+  } catch (err) {
+    console.error(`Bot kicklenemedi: ${member.user.tag}`, err);
+  }
+
+  const kanal = member.guild.systemChannel || member.guild.channels.cache.find(c =>
+    c.type === 0 && c.permissionsFor(member.guild.members.me).has("SendMessages")
+  );
+
+  if (kanal) {
+    const embed = new EmbedBuilder()
+      .setTitle("🚨 Anti-Raid Bot Koruması")
+      .setDescription(`Bot tespit edildi ve sunucudan atıldı: **${member.user.tag}**`)
+      .setColor(0xff0000);
+
+    kanal.send({ embeds: [embed] }).catch(() => {});
+  }
+});
+
+// anti raid son
