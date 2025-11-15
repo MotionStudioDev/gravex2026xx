@@ -10,9 +10,9 @@ module.exports = {
 
   async execute(interaction) {
     const client = interaction.client;
-    const member = interaction.member;
+    const member = interaction.guild.members.cache.get(interaction.user.id);
     const isKurucu = interaction.guild.ownerId === interaction.user.id;
-    const isYonetici = member.permissions.has("ManageGuild");
+    const isYonetici = member?.permissions.has("ManageGuild");
 
     if (!isKurucu && !isYonetici) {
       const embed = new EmbedBuilder()
