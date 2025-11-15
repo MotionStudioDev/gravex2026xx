@@ -23,6 +23,7 @@ module.exports = {
         { name: "reklam-engel", desc: "Reklam engelleme sistemi" },
         { name: "kufur-engel", desc: "Kufur engelleme sistemi" },
         { name: "sil", desc: "100 adet mesaj siler" },
+        { name: "unban", desc: "Banlanan kişinin banı kaldırılır" },
         { name: "kick", desc: "Kullanıcıyı sunucudan atar" }
       ],
       "Eğlence": [
