@@ -269,45 +269,166 @@ client.on("messageCreate", async message => {
 
 ///// küüfür son
 //caps
-const { Client, GatewayIntentBits, EmbedBuilder } = require("discord.js");
+// ======================================================
+// CAPS-LOCK SİSTEM DURUMU
+// ======================================================
+client.capsLockAktif = false;
 
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
-  ]
+
+// ======================================================
+// /caps-lock komutundan tetiklenen özel event
+// ======================================================
+client.on("capsCommandUsed", async (interaction) => {
+
+  const { ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } = require("discord.js");
+
+  // -----------------------------------------------
+  // Yetki kontrolü
+  // -----------------------------------------------
+  if (
+    !interaction.member.permissions.has(PermissionFlagsBits.Administrator) &&
+    interaction.guild.ownerId !== interaction.member.id
+  ) {
+    await interaction.editReply("❌ Bu komutu kullanmak için **Yönetici** yetkisine sahip olmalısınız!");
+    setTimeout(() => interaction.deleteReply().catch(() => {}), 3000);
+    return;
+  }
+
+  // -----------------------------------------------
+  // SİSTEM ZATEN AÇIKSA
+  // -----------------------------------------------
+  if (client.capsLockAktif) {
+    const kapatBtn = new ButtonBuilder()
+      .setCustomId("caps_kapat")
+      .setLabel("KAPAT")
+      .setStyle(ButtonStyle.Danger);
+
+    return interaction.editReply({
+      content: "⚠️ **Sistem sunucuda aktif durumda!**\nKapatmak için **KAPAT** butonuna tıklayın!",
+      components: [new ActionRowBuilder().addComponents(kapatBtn)],
+    });
+  }
+
+  // -----------------------------------------------
+  // SİSTEM KAPALI → Kullanıcıya sor
+  // -----------------------------------------------
+  const yesBtn = new ButtonBuilder()
+    .setCustomId("caps_ac")
+    .setLabel("EVET")
+    .setStyle(ButtonStyle.Success);
+
+  const noBtn = new ButtonBuilder()
+    .setCustomId("caps_hayir")
+    .setLabel("HAYIR")
+    .setStyle(ButtonStyle.Danger);
+
+  return interaction.editReply({
+    content: "⚠️ **Dikkat, Caps-Lock sistemi aktif edilmek üzere.**\nSistemi açmak istiyor musunuz?",
+    components: [new ActionRowBuilder().addComponents(yesBtn, noBtn)],
+  });
 });
 
-// Sistem durumu
-client.capsLockAktif = true; // test için açık başlatıyoruz
 
-client.on("messageCreate", async message => {
+// ======================================================
+// BUTTON EVENTLERİ (EVET – HAYIR – KAPAT)
+// ======================================================
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isButton()) return;
+
+  await interaction.deferUpdate();
+
+  const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+
+  // ---------------------------
+  // EVET → SİSTEMİ AÇ
+  // ---------------------------
+  if (interaction.customId === "caps_ac") {
+    await interaction.editReply({
+      content: "⏳ Lütfen bekleyiniz, sistem aktif ediliyor...",
+      components: [],
+    });
+
+    setTimeout(async () => {
+      client.capsLockAktif = true;
+
+      const kapatButton = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId("caps_kapat")
+          .setLabel("KAPAT")
+          .setStyle(ButtonStyle.Danger)
+      );
+
+      await interaction.editReply({
+        content: "✅ **Sistem sunucuda aktif edildi!**\nKapatmak istiyorsanız **KAPAT** tuşuna basınız.",
+        components: [kapatButton],
+      });
+    }, 1000);
+  }
+
+  // ---------------------------
+  // HAYIR → REDDEDİLDİ
+  // ---------------------------
+  if (interaction.customId === "caps_hayir") {
+    await interaction.editReply({
+      content: "❌ Talebiniz reddedilmiştir.",
+      components: [],
+    });
+
+    setTimeout(() => interaction.deleteReply().catch(() => {}), 3000);
+  }
+
+  // ---------------------------
+  // KAPAT → SİSTEMİ KAPAT
+  // ---------------------------
+  if (interaction.customId === "caps_kapat") {
+    await interaction.editReply({
+      content: "⏳ Lütfen bekleyiniz, sistem kapatılıyor...",
+      components: [],
+    });
+
+    setTimeout(async () => {
+      client.capsLockAktif = false;
+
+      await interaction.editReply({
+        content: "🛑 **Sistem kapatıldı.**",
+        components: [],
+      });
+    }, 1000);
+  }
+});
+
+
+// ======================================================
+// CAPS LOCK ENGEL KORUMASI (Mesaj Silme)
+// ======================================================
+const { EmbedBuilder, PermissionFlagsBits } = require("discord.js");
+
+client.on("messageCreate", async (message) => {
   if (!client.capsLockAktif) return;
-  if (message.author.bot || !message.guild) return;
-  if (!message.member || message.member.permissions.has("ManageMessages")) return;
+  if (!message.guild || message.author.bot) return;
 
-  const içerik = message.content;
+  if (message.member.permissions.has(PermissionFlagsBits.ManageMessages))
+    return;
 
-  // Sadece harfleri al (Türkçe dahil)
-  const harfler = içerik.match(/[a-zA-ZçÇğĞıİöÖşŞüÜ]/gu) || [];
+  const letters = message.content.replace(/[^a-zA-ZçÇğĞıİöÖşŞüÜ]/g, "");
+  if (letters.length < 5) return;
 
-  // En az 5 harf olmalı
-  if (harfler.length < 5) return;
+  const upperCount = [...letters].filter(
+    (h) => h === h.toLocaleUpperCase("tr")
+  ).length;
 
-  // Büyük harf oranı
-  const büyükHarfSayısı = harfler.filter(h => h === h.toLocaleUpperCase("tr")).length;
-  const oran = büyükHarfSayısı / harfler.length;
+  const ratio = upperCount / letters.length;
 
-  if (oran >= 0.8) {
+  if (ratio >= 0.8) {
     await message.delete().catch(() => {});
+
     const embed = new EmbedBuilder()
       .setTitle("🔇 Büyük Harf Engeli")
       .setDescription(`**${message.author.tag}** tarafından gönderilen mesaj büyük harf içerdiği için silindi.`)
       .setColor(0xffcc00);
 
-    const uyarı = await message.channel.send({ embeds: [embed] }).catch(() => {});
-    setTimeout(() => uyarı?.delete().catch(() => {}), 2000);
+    const warn = await message.channel.send({ embeds: [embed] });
+    setTimeout(() => warn.delete().catch(() => {}), 2000);
   }
 });
 
