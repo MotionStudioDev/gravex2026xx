@@ -53,7 +53,7 @@ client.commandaliases = new Collection();
 const rest = new REST({ version: "10" }).setToken(token);
 const log = x => console.log(`[${moment().format("DD-MM-YYYY HH:mm:ss")}] ${x}`);
 
-// Komutları yükle
+// Normal komutlar
 readdirSync("./src/commands/normal").forEach(async file => {
   const command = require(`./src/commands/normal/${file}`);
   if (command) {
@@ -66,6 +66,7 @@ readdirSync("./src/commands/normal").forEach(async file => {
   }
 });
 
+// Slash komutlar
 const slashcommands = [];
 readdirSync("./src/commands/slash").forEach(async file => {
   const command = require(`./src/commands/slash/${file}`);
@@ -73,17 +74,20 @@ readdirSync("./src/commands/slash").forEach(async file => {
   client.slashcommands.set(command.data.name, command);
 });
 
+// Bot hazır olduğunda
 client.on("ready", async () => {
   try {
-    await rest.put(Routes.applicationCommands(client.user.id), {
-      body: slashcommands
-    });
+    await rest.put(
+      Routes.applicationCommands(client.user.id),
+      { body: slashcommands }
+    );
     log(`${client.user.username} Aktif Edildi!`);
   } catch (error) {
     console.error("Slash komutları yüklenirken hata:", error);
   }
 });
 
+// Eventler
 readdirSync("./src/events").forEach(async file => {
   const event = require(`./src/events/${file}`);
   if (event.once) {
@@ -93,16 +97,19 @@ readdirSync("./src/events").forEach(async file => {
   }
 });
 
-// Express sunucusu
+// Node.js hata yakalama
+process.on("unhandledRejection", console.error);
+process.on("uncaughtException", console.error);
+process.on("uncaughtExceptionMonitor", console.error);
+
+// Express sunucusu (Render için)
 const express = require("express");
 const app = express();
 app.get("/", (req, res) => res.sendStatus(200));
 app.listen(process.env.PORT || 3000);
 
-// Hata yakalama
-process.on("unhandledRejection", console.error);
-process.on("uncaughtException", console.error);
-process.on("uncaughtExceptionMonitor", console.error);
+// Botu başlat
+client.login(token);
 
 // Reklam koruma
 const REKLAM_KELIMELERI = [
