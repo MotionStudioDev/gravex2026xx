@@ -33,7 +33,10 @@ module.exports = {
     client.modLogAktifGuilds ??= new Map();
     client.modLogKanal ??= new Map();
 
-    if (client.modLogAktifGuilds.get(guild.id)) {
+    const aktifMi = client.modLogAktifGuilds.get(guild.id);
+    const kanalVarMi = client.modLogKanal.get(guild.id);
+
+    if (aktifMi && kanalVarMi) {
       return interaction.reply({
         embeds: [new EmbedBuilder()
           .setTitle("ℹ️ Mod-Log Zaten Aktif")
@@ -59,7 +62,7 @@ module.exports = {
     const msg = await interaction.fetchReply();
 
     const collector = msg.createMessageComponentCollector({
-      time: 30000,
+      time: 60000,
       filter: i => i.user.id === interaction.user.id
     });
 
@@ -97,7 +100,8 @@ module.exports = {
                 .addChannelTypes(ChannelType.GuildText)
             )]
           });
-        }, 2000);
+        }, 1500);
+        return;
       }
 
       if (i.customId === "modlog-kapat") {
@@ -117,27 +121,24 @@ module.exports = {
               .setColor(0x00aa00)],
             components: []
           });
-        }, 2000);
+        }, 1500);
+        return;
       }
-    });
 
-    const kanalCollector = msg.createMessageComponentCollector({
-      time: 60000,
-      filter: i => i.customId === "modlog-kanal" && i.user.id === interaction.user.id
-    });
+      if (i.customId === "modlog-kanal") {
+        const kanalId = i.values[0];
+        client.modLogKanal.set(guild.id, kanalId);
 
-    kanalCollector.on("collect", async i => {
-      const kanalId = i.values[0];
-      client.modLogKanal.set(guild.id, kanalId);
-
-      await i.update({
-        embeds: [new EmbedBuilder()
-          .setDescription("✅ Mod-Log kanalı ayarlandı.\nSistemi kapatmak istiyorsanız **KAPAT** tuşuna basınız.")
-          .setColor(0x00aa00)],
-        components: [new ActionRowBuilder().addComponents(
-          new ButtonBuilder().setCustomId("modlog-kapat").setLabel("🛑 KAPAT").setStyle(ButtonStyle.Danger)
-        )]
-      });
+        await i.update({
+          embeds: [new EmbedBuilder()
+            .setDescription("✅ Mod-Log kanalı ayarlandı.\nSistemi kapatmak istiyorsanız **KAPAT** tuşuna basınız.")
+            .setColor(0x00aa00)],
+          components: [new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId("modlog-kapat").setLabel("🛑 KAPAT").setStyle(ButtonStyle.Danger)
+          )]
+        });
+        return;
+      }
     });
   }
 };
