@@ -268,3 +268,25 @@ client.on("messageCreate", async message => {
 });
 
 ///// küüfür son
+///// caps lock 
+client.on("messageCreate", async message => {
+  if (!capsLockAktif) return;
+  if (message.author.bot || !message.guild) return;
+  if (!message.member || message.member.permissions.has("ManageMessages")) return;
+
+  const içerik = message.content;
+  const harfler = içerik.replace(/[^a-zA-ZçÇğĞıİöÖşŞüÜ]/g, "");
+  const oran = harfler.length > 0 ? harfler.split("").filter(h => h === h.toUpperCase()).length / harfler.length : 0;
+
+  if (harfler.length >= 5 && oran >= 0.8) {
+    await message.delete().catch(() => {});
+    const embed = new EmbedBuilder()
+      .setTitle("🔇 Büyük Harf Engeli")
+      .setDescription(`**${message.author.tag}** tarafından gönderilen mesaj büyük harf içerdiği için silindi.`)
+      .setColor(0xffcc00);
+
+    const uyarı = await message.channel.send({ embeds: [embed] }).catch(() => {});
+    setTimeout(() => uyarı?.delete().catch(() => {}), 2000);
+  }
+});
+///// caps lock son
