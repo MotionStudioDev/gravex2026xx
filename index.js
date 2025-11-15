@@ -1,4 +1,14 @@
-const { Client, Collection, GatewayIntentBits, Partials } = require("discord.js");
+const {
+  Client,
+  Collection,
+  GatewayIntentBits,
+  Partials,
+  EmbedBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  PermissionsBitField
+} = require("discord.js");
 const { readdirSync } = require("fs");
 const moment = require("moment");
 const { REST } = require("@discordjs/rest");
@@ -43,13 +53,11 @@ client.commandaliases = new Collection();
 const rest = new REST({ version: "10" }).setToken(token);
 const log = x => console.log(`[${moment().format("DD-MM-YYYY HH:mm:ss")}] ${x}`);
 
-// Normal komutlar
-const commands = [];
+// Komutları yükle
 readdirSync("./src/commands/normal").forEach(async file => {
   const command = require(`./src/commands/normal/${file}`);
   if (command) {
     client.commands.set(command.name, command);
-    commands.push(command.name, command);
     if (Array.isArray(command.aliases)) {
       command.aliases.forEach(alias => {
         client.commandaliases.set(alias, command.name);
@@ -58,7 +66,6 @@ readdirSync("./src/commands/normal").forEach(async file => {
   }
 });
 
-// Slash komutlar
 const slashcommands = [];
 readdirSync("./src/commands/slash").forEach(async file => {
   const command = require(`./src/commands/slash/${file}`);
@@ -66,20 +73,17 @@ readdirSync("./src/commands/slash").forEach(async file => {
   client.slashcommands.set(command.data.name, command);
 });
 
-// Bot hazır olduğunda
 client.on("ready", async () => {
   try {
-    await rest.put(
-      Routes.applicationCommands(client.user.id),
-      { body: slashcommands }
-    );
+    await rest.put(Routes.applicationCommands(client.user.id), {
+      body: slashcommands
+    });
     log(`${client.user.username} Aktif Edildi!`);
   } catch (error) {
     console.error("Slash komutları yüklenirken hata:", error);
   }
 });
 
-// Eventler
 readdirSync("./src/events").forEach(async file => {
   const event = require(`./src/events/${file}`);
   if (event.once) {
@@ -89,41 +93,31 @@ readdirSync("./src/events").forEach(async file => {
   }
 });
 
-// Node.js hata yakalama
+// Express sunucusu
+const express = require("express");
+const app = express();
+app.get("/", (req, res) => res.sendStatus(200));
+app.listen(process.env.PORT || 3000);
+
+// Hata yakalama
 process.on("unhandledRejection", console.error);
 process.on("uncaughtException", console.error);
 process.on("uncaughtExceptionMonitor", console.error);
 
-// Express sunucusu (Render için)
-const express = require("express");
-const app = express();
-
-app.get("/", (req, res) => res.sendStatus(200));
-app.listen(process.env.PORT || 3000);
-
-// Botu başlat
-client.login(token);
-
-////////reklam 
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionsBitField } = require("discord.js");
-
-// Reklam kelimeleri (daha akıllı filtre)
+// Reklam koruma
 const REKLAM_KELIMELERI = [
   "discord.gg", "discord.com/invite", "discordapp.com/invite",
   "http://", "https://",
   ".com", ".net", ".org", ".xyz", ".tk", ".gg", ".me", ".io"
 ];
 
-client.on("messageCreate", async (message) => {
-  // 1. Temel kontroller
+client.on("messageCreate", async message => {
   if (!client.reklamKorumaAktif) return;
   if (message.author.bot || !message.guild || !message.member) return;
   if (message.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) return;
 
-  // 2. İçerik, kullanıcı adı ve embed'leri topla
   const içerik = message.content.toLowerCase();
   const kullanıcıAdı = message.author.displayName.toLowerCase();
-
   const embedMetinleri = message.embeds
     .flatMap(embed => [
       embed.title,
@@ -134,7 +128,6 @@ client.on("messageCreate", async (message) => {
     .filter(Boolean)
     .map(str => str.toLowerCase());
 
-  // 3. Reklam kontrolü
   const reklamVar = REKLAM_KELIMELERI.some(kelime =>
     içerik.includes(kelime) ||
     kullanıcıAdı.includes(kelime) ||
@@ -143,7 +136,6 @@ client.on("messageCreate", async (message) => {
 
   if (!reklamVar) return;
 
-  // 4. Mesajı sil
   try {
     await message.delete();
   } catch (err) {
@@ -151,10 +143,8 @@ client.on("messageCreate", async (message) => {
     return;
   }
 
-  // 5. Uyarı mesajı (3 sn sonra silinir)
-  let uyarıMesajı;
   try {
-    uyarıMesajı = await message.channel.send({
+    const uyarıMesajı = await message.channel.send({
       embeds: [
         new EmbedBuilder()
           .setTitle("Reklam Engellendi")
@@ -167,111 +157,39 @@ client.on("messageCreate", async (message) => {
   } catch (err) {
     console.error(`[REKLAM] Uyarı gönderilemedi: ${message.channel.id}`, err);
   }
+});
 
-  // 6. Log kanalı
-  const logKanalID = client.reklamLogKanal?.get(message.guild.id);
-  if (!logKanalID) return;
+// Küfür engel
+client.on("messageCreate", async message => {
+  if (!message.guild || message.author.bot) return;
+  const guildId = message.guild.id;
+  if (!client.kufurEngelAktif || !client.kufurEngelAktif.get(guildId)) return;
 
-  const logKanal = message.guild.channels.cache.get(logKanalID);
-  if (!logKanal) return;
+  const kufurler = [
+    "amk", "aq", "aQ", "siktir", "orospu", "piç",
+    "sik", "yarrak", "amına", "amcık", "göt",
+    "mal", "salak", "gerizekalı"
+  ];
 
-  try {
-    const logEmbed = new EmbedBuilder()
-      .setTitle("Reklam Yakalandı!")
-      .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
-      .addFields(
-        { name: "Üye", value: `${message.author} (\`${message.author.id}\`)`, inline: true },
-        { name: "Kanal", value: `${message.channel}`, inline: true },
-        { name: "Tarih", value: `<t:${Math.floor(Date.now() / 1000)}:F>`, inline: false },
-        { name: "İçerik", value: message.content?.slice(0, 1000) || "*Embed/attachment*", inline: false }
-      )
-      .setColor(0xff9900)
-      .setFooter({ text: `Mesaj ID: ${message.id}` });
+  const içerik = message.content.toLowerCase();
+  if (kufurler.some(k => içerik.includes(k))) {
+    try { await message.delete(); } catch (e) {}
 
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setLabel("Mesaja Git")
-        .setStyle(ButtonStyle.Link)
-        .setURL(`https://discord.com/channels/${message.guild.id}/${message.channel.id}/${message.id}`)
-    );
-
-    await logKanal.send({
-      embeds: [logEmbed],
-      components: [row]
+    message.channel.send({
+      embeds: [
+        {
+          title: "⚠️ Uyarı",
+          description: `${message.author}, bu sunucuda küfür kullanamazsın.`,
+          color: 0xffcc00
+        }
+      ]
+    }).then(msg => {
+      setTimeout(() => msg.delete().catch(() => {}), 3000);
     });
-  } catch (err) {
-    console.error(`[REKLAM] Log gönderilemedi: ${logKanalID}`, err);
   }
 });
-///// reklam son
-//////// küfür engel
-// --- KÜFÜR ENGEL EVENT --- //
-client.on("messageCreate", async message => {
-    if (!message.guild || message.author.bot) return;
 
-    const guildId = message.guild.id;
-
-    // Sistem açık değilse çalışmasın
-    if (
-        !client.kufurEngelAktif ||
-        !client.kufurEngelAktif.get(guildId)
-    ) return;
-
-    // Küfür listesi
-    const kufurler = [
-        "amk", "aq", "aQ", "siktir", "orospu", "piç",
-        "sik", "yarrak", "amına", "amcık", "göt",
-        "mal", "salak", "gerizekalı"
-    ];
-
-    const içerik = message.content.toLowerCase();
-
-    // Küfür kontrolü
-    if (kufurler.some(k => içerik.includes(k))) {
-
-        // Mesajı sil
-        try { await message.delete(); } catch (e) {}
-
-        // ⚠️ Embedli uyarı mesajı (3 saniye sonra silinir)
-        message.channel.send({
-            embeds: [
-                {
-                    title: "⚠️ Uyarı",
-                    description: `${message.author}, bu sunucuda küfür kullanamazsın.`,
-                    color: 0xffcc00
-                }
-            ]
-        }).then(msg => {
-            setTimeout(() => msg.delete().catch(() => {}), 3000); // 3 saniye
-        });
-
-        // Log sistemi
-        const logChannelId = client.kufurLogKanal?.get(guildId);
-        const logChannel = message.guild.channels.cache.get(logChannelId);
-
-        if (logChannel) {
-            logChannel.send({
-                embeds: [
-                    {
-                        title: "📌 Küfür Tespit Edildi",
-                        description:
-                            `**Kullanıcı:** ${message.author}\n` +
-                            `**Kanal:** <#${message.channel.id}>\n` +
-                            `**Mesaj:** ${message.content}`,
-                        color: 0xff0000,
-                        timestamp: new Date()
-                    }
-                ]
-            });
-        }
-    }
-});
-
-///// küüfür son
-//anti raid bot
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionsBitField } = require("discord.js");
-
-
+// Anti-raid bot koruması
 client.antiBotRaidAktif = false;
 
 client.on("guildMemberAdd", async member => {
@@ -297,5 +215,3 @@ client.on("guildMemberAdd", async member => {
     kanal.send({ embeds: [embed] }).catch(() => {});
   }
 });
-
-// anti raid son
